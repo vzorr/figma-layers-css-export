@@ -1,23 +1,18 @@
 {
-  "name": "layers-to-css-generator",
+  "name": "Layers to CSS Generator",
   "id": "1523759936297065466",
   "api": "1.0.0",
   "main": "code.js",
   "capabilities": [
-    "codegen"
+    "inspect"
   ],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
   "editorType": [
+    "figma",
     "dev"
   ],
   "ui": "ui.html",
-  "codegenLanguages": [
-    {
-      "label": "Language Label",
-      "value": "language-value"
-    }
-  ],
   "networkAccess": {
     "allowedDomains": [
       "none"
