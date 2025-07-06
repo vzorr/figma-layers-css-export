@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Layers to CSS Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--figma-color-text);
+      background-color: var(--figma-color-bg);
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      padding: 16px;
+      border-bottom: 1px solid var(--figma-color-border);
+      background-color: var(--figma-color-bg-secondary);
+    }
+
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--figma-color-text);
+    }
+
+    .header p {
+      font-size: 11px;
+      color: var(--figma-color-text-secondary);
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .layers-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+      margin-bottom: 2px;
+      font-size: 11px;
+    }
+
+    .layer-item:hover {
+      background-color: var(--figma-color-bg-hover);
+    }
+
+    .layer-item.selected {
+      background-color: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+    }
+
+    .layer-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    .layer-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .layer-type {
+      font-size: 10px;
+      color: var(--figma-color-text-secondary);
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .layer-children {
+      margin-left: 20px;
+    }
+
+    .expand-button {
+      width: 12px;
+      height: 12px;
+      margin-right: 4px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--figma-color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .expand-button:hover {
+      color: var(--figma-color-text);
+    }
+
+    .preview-panel {
+      border-top: 1px solid var(--figma-color-border);
+      background-color: var(--figma-color-bg-secondary);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .preview-header {
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid var(--figma-color-border);
+      background-color: var(--figma-color-bg);
+    }
+
+    .preview-header h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--figma-color-text);
+    }
+
+    .preview-content {
+      padding: 12px 16px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 10px;
+      white-space: pre-wrap;
+      color: var(--figma-color-text-secondary);
+      line-height: 1.3;
+    }
+
+    .actions {
+      padding: 12px 16px;
+      border-top: 1px solid var(--figma-color-border);
+      background-color: var(--figma-color-bg);
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 4px;
+      background-color: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      flex: 1;
+    }
+
+    .btn:hover {
+      background-color: var(--figma-color-bg-hover);
+    }
+
+    .btn.primary {
+      background-color: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+      border-color: var(--figma-color-bg-brand);
+    }
+
+    .btn.primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 4px;
+      background-color: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--figma-color-border-brand);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--figma-color-text-secondary);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--figma-color-text-secondary);
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--figma-color-bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--figma-color-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--figma-color-text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎨 Layers to CSS Generator</h1>
+      <p>Select a layer to export its hierarchy and CSS properties</p>
+    </div>
+
+    <div class="main-content">
+      <div class="layers-panel">
+        <input type="text" class="search-box" placeholder="Search layers..." id="searchInput">
+        <div id="layersContainer">
+          <div class="loading">Loading layers...</div>
+        </div>
+      </div>
+
+      <div class="preview-panel" id="previewPanel" style="display: none;">
+        <div class="preview-header">
+          <h3 id="previewTitle">Layer Preview</h3>
+        </div>
+        <div class="preview-content" id="previewContent"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="selectInFigmaBtn" disabled>Select in Figma</button>
+      <button class="btn" id="copyJsonBtn" disabled>Copy JSON</button>
+      <button class="btn" id="copyCssBtn" disabled>Copy CSS</button>
+      <button class="btn primary" id="exportBtn" disabled>Export Selected</button>
+    </div>
+  </div>
+
+  <script>
+    class LayersManager {
+      constructor() {
+        this.layers = [];
+        this.selectedLayer = null;
+        this.filteredLayers = [];
+        this.expandedItems = new Set();
+        
+        this.initializeElements();
+        this.setupEventListeners();
+        this.requestLayers();
+      }
+
+      initializeElements() {
+        this.layersContainer = document.getElementById('layersContainer');
+        this.previewPanel = document.getElementById('previewPanel');
+        this.previewTitle = document.getElementById('previewTitle');
+        this.previewContent = document.getElementById('previewContent');
+        this.searchInput = document.getElementById('searchInput');
+        this.selectInFigmaBtn = document.getElementById('selectInFigmaBtn');
+        this.copyJsonBtn = document.getElementById('copyJsonBtn');
+        this.copyCssBtn = document.getElementById('copyCssBtn');
+        this.exportBtn = document.getElementById('exportBtn');
+      }
+
+      setupEventListeners() {
+        this.searchInput.addEventListener('input', (e) => {
+          this.filterLayers(e.target.value);
+        });
+
+        this.selectInFigmaBtn.addEventListener('click', () => {
+          if (this.selectedLayer) {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'select-layer',
+                layerId: this.selectedLayer.id
+              }
+            }, '*');
+          }
+        });
+
+        this.copyJsonBtn.addEventListener('click', () => {
+          if (this.selectedLayer) {
+            this.copyToClipboard(JSON.stringify(this.selectedLayer, null, 2));
+          }
+        });
+
+        this.copyCssBtn.addEventListener('click', () => {
+          if (this.selectedLayer && this.selectedLayer.css) {
+            const cssString = this.formatCSS(this.selectedLayer.css, this.selectedLayer.name);
+            this.copyToClipboard(cssString);
+          }
+        });
+
+        this.exportBtn.addEventListener('click', () => {
+          if (this.selectedLayer) {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'export-layer',
+                layerId: this.selectedLayer.id
+              }
+            }, '*');
+          }
+        });
+
+        // Listen for messages from the plugin
+        window.onmessage = (event) => {
+          const { type, data, message } = event.data.pluginMessage || {};
+          
+          switch (type) {
+            case 'layers-data':
+              this.layers = data;
+              this.filteredLayers = data;
+              this.renderLayers();
+              break;
+            case 'export-data':
+              this.downloadJSON(data);
+              break;
+            case 'selection-changed':
+              this.selectLayer(data);
+              break;
+            case 'layer-selected':
+              // Show feedback that layer was selected in Figma
+              this.showTemporaryFeedback(this.selectInFigmaBtn, 'Selected!');
+              break;
+            case 'error':
+              alert(message);
+              break;
+          }
+        };
+      }
+
+      requestLayers() {
+        parent.postMessage({
+          pluginMessage: { type: 'get-layers' }
+        }, '*');
+      }
+
+      filterLayers(searchTerm) {
+        if (!searchTerm.trim()) {
+          this.filteredLayers = this.layers;
+        } else {
+          this.filteredLayers = this.layers.map(page => ({
+            ...page,
+            children: this.filterLayerChildren(page.children, searchTerm.toLowerCase())
+          })).filter(page => page.children.length > 0);
+        }
+        this.renderLayers();
+      }
+
+      filterLayerChildren(children, searchTerm) {
+        const filtered = [];
+        for (const child of children) {
+          const matches = child.name.toLowerCase().includes(searchTerm);
+          const childrenFiltered = child.children ? this.filterLayerChildren(child.children, searchTerm) : [];
+          
+          if (matches || childrenFiltered.length > 0) {
+            filtered.push({
+              ...child,
+              children: childrenFiltered
+            });
+          }
+        }
+        return filtered;
+      }
+
+      renderLayers() {
+        if (this.filteredLayers.length === 0) {
+          this.layersContainer.innerHTML = '<div class="empty-state">No layers found</div>';
+          return;
+        }
+
+        let html = '';
+        for (const page of this.filteredLayers) {
+          html += this.renderLayerItem(page, 0);
+        }
+        this.layersContainer.innerHTML = html;
+      }
+
+      renderLayerItem(layer, depth) {
+        const hasChildren = layer.children && layer.children.length > 0;
+        const isExpanded = this.expandedItems.has(layer.id);
+        const isSelected = this.selectedLayer && this.selectedLayer.id === layer.id;
+        
+        let html = `
+          <div class="layer-item ${isSelected ? 'selected' : ''}" 
+               data-layer-id="${layer.id}" 
+               style="padding-left: ${8 + depth * 16}px;">
+            ${hasChildren ? 
+              `<button class="expand-button" data-toggle-id="${layer.id}">
+                ${isExpanded ? '▼' : '▶'}
+              </button>` : 
+              '<span style="width: 12px; display: inline-block;"></span>'
+            }
+            <span class="layer-icon">${this.getLayerIcon(layer.type)}</span>
+            <span class="layer-name">${layer.name}</span>
+            <span class="layer-type">${layer.type}</span>
+          </div>
+        `;
+
+        if (hasChildren && isExpanded) {
+          for (const child of layer.children) {
+            html += this.renderLayerItem(child, depth + 1);
+          }
+        }
+
+        return html;
+      }
+
+      getLayerIcon(type) {
+        const icons = {
+          'PAGE': '📄',
+          'FRAME': '🟦',
+          'COMPONENT': '🧩',
+          'INSTANCE': '📱',
+          'TEXT': '📝',
+          'RECTANGLE': '⬜',
+          'ELLIPSE': '⭕',
+          'POLYGON': '🔸',
+          'STAR': '⭐',
+          'VECTOR': '✏️',
+          'IMAGE': '🖼️',
+          'GROUP': '📁'
+        };
+        return icons[type] || '⚪';
+      }
+
+      selectLayer(layer) {
+        this.selectedLayer = layer;
+        this.updateSelection();
+        this.showPreview(layer);
+        this.updateButtons();
+      }
+
+      updateSelection() {
+        document.querySelectorAll('.layer-item').forEach(item => {
+          item.classList.remove('selected');
+        });
+        
+        if (this.selectedLayer) {
+          const selectedElement = document.querySelector(`[data-layer-id="${this.selectedLayer.id}"]`);
+          if (selectedElement) {
+            selectedElement.classList.add('selected');
+          }
+        }
+      }
+
+      showPreview(layer) {
+        this.previewTitle.textContent = `${layer.name} (${layer.type})`;
+        
+        const preview = {
+          name: layer.name,
+          type: layer.type,
+          css: layer.css,
+          properties: layer.properties
+        };
+        
+        if (layer.children && layer.children.length > 0) {
+          preview.children = `${layer.children.length} child elements`;
+        }
+        
+        this.previewContent.textContent = JSON.stringify(preview, null, 2);
+        this.previewPanel.style.display = 'block';
+      }
+
+      updateButtons() {
+        const hasSelection = !!this.selectedLayer;
+        this.selectInFigmaBtn.disabled = !hasSelection;
+        this.copyJsonBtn.disabled = !hasSelection;
+        this.copyCssBtn.disabled = !hasSelection;
+        this.exportBtn.disabled = !hasSelection;
+      }
+
+      formatCSS(cssProperties, className) {
+        const sanitizedClass = className.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+        let css = `.${sanitizedClass} {\n`;
+        
+        for (const [property, value] of Object.entries(cssProperties)) {
+          const kebabProperty = property.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+          css += `  ${kebabProperty}: ${value};\n`;
+        }
+        
+        css += '}';
+        return css;
+      }
+
+      copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          // Show temporary feedback
+          this.showTemporaryFeedback(event.target, 'Copied!');
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          alert('Failed to copy to clipboard');
+        });
+      }
+
+      showTemporaryFeedback(button, message) {
+        const originalText = button.textContent;
+        button.textContent = message;
+        button.style.backgroundColor = 'var(--figma-color-bg-success)';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.backgroundColor = '';
+        }, 1500);
+      }
+
+      downloadJSON(data) {
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.name || 'layer'}-export.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    // Event delegation for layer selection and expansion
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('expand-button')) {
+        const layerId = e.target.dataset.toggleId;
+        if (layersManager.expandedItems.has(layerId)) {
+          layersManager.expandedItems.delete(layerId);
+        } else {
+          layersManager.expandedItems.add(layerId);
+        }
+        layersManager.renderLayers();
+        e.stopPropagation();
+      } else if (e.target.closest('.layer-item')) {
+        const layerElement = e.target.closest('.layer-item');
+        const layerId = layerElement.dataset.layerId;
+        const layer = findLayerById(layersManager.filteredLayers, layerId);
+        if (layer) {
+          layersManager.selectLayer(layer);
+        }
+      }
+    });
+
+    function findLayerById(layers, id) {
+      for (const layer of layers) {
+        if (layer.id === id) return layer;
+        if (layer.children) {
+          const found = findLayerById(layer.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    // Initialize the application
+    const layersManager = new LayersManager();
+  </script>
+</body>
+</html>
