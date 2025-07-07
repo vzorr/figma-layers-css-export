@@ -1,11 +1,13 @@
-// src/ui/components/PluginUI.tsx
+// src/ui/components/PluginUI.tsx - Enhanced Main UI Component
 import React, { useState, useEffect } from 'react';
-import { DeviceInfo, ThemeTokens, LayerData } from '../../shared/types';
 import { 
-  PluginToUIMessage, 
-  UIToPluginMessage,
-  GenerationOptions 
-} from '../../shared/types/Messages';
+  DeviceInfo, 
+  ThemeTokens, 
+  LayerData,
+  GenerationOptions,
+  PluginToUIMessage,
+  UIToPluginMessage 
+} from '../../shared/types';
 
 interface PluginState {
   devices: DeviceInfo[];
@@ -30,8 +32,9 @@ export const PluginUI: React.FC = () => {
 
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [showCodePanel, setShowCodePanel] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'layers' | 'options'>('overview');
 
-  // Options for code generation
+  // Generation options
   const [options, setOptions] = useState<GenerationOptions>({
     useTypeScript: true,
     useResponsive: true,
@@ -42,7 +45,7 @@ export const PluginUI: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('🎨 [PluginUI.tsx:35] UI component mounted');
+    console.log('🎨 [PluginUI] Component mounted');
     
     // Listen for messages from plugin
     window.addEventListener('message', handlePluginMessage);
@@ -59,7 +62,7 @@ export const PluginUI: React.FC = () => {
     const message: PluginToUIMessage = event.data.pluginMessage;
     if (!message) return;
 
-    console.log(`📨 [PluginUI.tsx:50] Received: ${message.type}`);
+    console.log(`📨 [PluginUI] Received: ${message.type}`);
 
     switch (message.type) {
       case 'design-system-analyzed':
@@ -136,7 +139,8 @@ export const PluginUI: React.FC = () => {
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedCode);
-      alert('Code copied to clipboard!');
+      // You could add a toast notification here
+      console.log('✅ Code copied to clipboard');
     } catch (error) {
       console.error('Failed to copy:', error);
     }
@@ -152,6 +156,11 @@ export const PluginUI: React.FC = () => {
           <span className="layer-icon">{getLayerIcon(layer.type)}</span>
           <span className="layer-name">{layer.name}</span>
           <span className="layer-type">{layer.type}</span>
+          {layer.componentPattern && (
+            <span className="pattern-badge">
+              {layer.componentPattern.type} ({Math.round(layer.componentPattern.confidence * 100)}%)
+            </span>
+          )}
           {layer.deviceInfo && (
             <span className="device-badge">{layer.deviceInfo.category}</span>
           )}
@@ -181,6 +190,7 @@ export const PluginUI: React.FC = () => {
       <div className="loading-container">
         <div className="spinner"></div>
         <p>Analyzing design system...</p>
+        <small>Detecting devices, extracting colors, and analyzing components...</small>
       </div>
     );
   }
@@ -205,111 +215,242 @@ export const PluginUI: React.FC = () => {
           <div className="header">
             <h1>🎨 Figma → React Native</h1>
             <p>
-              Found {state.devices.length} devices, {state.themeTokens?.colors.length || 0} colors
+              {state.devices.length} devices • {state.themeTokens?.colors.length || 0} colors • {state.layers.length} screens
             </p>
           </div>
 
-          {/* Device Summary */}
-          {state.devices.length > 0 && (
-            <div className="device-summary">
-              <h3>📱 Detected Devices</h3>
-              <div className="device-list">
-                {state.devices.map(device => (
-                  <div key={device.id} className={`device-item ${device.isBaseDevice ? 'base' : ''}`}>
-                    <span>{device.name}</span>
-                    <span>{device.width}×{device.height}</span>
-                    {device.isBaseDevice && <span className="base-badge">BASE</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Theme Summary */}
-          {state.themeTokens && (
-            <div className="theme-summary">
-              <h3>🎨 Design System</h3>
-              <div className="token-stats">
-                <div className="token-stat">
-                  <span className="count">{state.themeTokens.colors.length}</span>
-                  <span className="label">Colors</span>
-                </div>
-                <div className="token-stat">
-                  <span className="count">{state.themeTokens.typography.length}</span>
-                  <span className="label">Typography</span>
-                </div>
-                <div className="token-stat">
-                  <span className="count">{state.themeTokens.spacing.length}</span>
-                  <span className="label">Spacing</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Layer Tree */}
-          <div className="layers-section">
-            <h3>📋 Screens & Components</h3>
-            <div className="layers-tree">
-              {state.layers.length > 0 ? (
-                renderLayerTree(state.layers)
-              ) : (
-                <p className="no-layers">No screen frames found. Create frames with device dimensions.</p>
-              )}
-            </div>
+          {/* Navigation Tabs */}
+          <div className="tabs">
+            <button 
+              className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              📊 Overview
+            </button>
+            <button 
+              className={`tab ${activeTab === 'layers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('layers')}
+            >
+              📋 Screens ({state.layers.length})
+            </button>
+            <button 
+              className={`tab ${activeTab === 'options' ? 'active' : ''}`}
+              onClick={() => setActiveTab('options')}
+            >
+              ⚙️ Options
+            </button>
           </div>
 
-          {/* Generation Options */}
-          <div className="options-section">
-            <h3>⚙️ Generation Options</h3>
-            <div className="options-grid">
-              <label className="option-item">
-                <input
-                  type="checkbox"
-                  checked={options.useTypeScript}
-                  onChange={(e) => setOptions(prev => ({ ...prev, useTypeScript: e.target.checked }))}
-                />
-                <span>TypeScript</span>
-              </label>
-              <label className="option-item">
-                <input
-                  type="checkbox"
-                  checked={options.useResponsive}
-                  onChange={(e) => setOptions(prev => ({ ...prev, useResponsive: e.target.checked }))}
-                />
-                <span>Responsive</span>
-              </label>
-              <label className="option-item">
-                <input
-                  type="checkbox"
-                  checked={options.useThemeTokens}
-                  onChange={(e) => setOptions(prev => ({ ...prev, useThemeTokens: e.target.checked }))}
-                />
-                <span>Theme Tokens</span>
-              </label>
-              <label className="option-item">
-                <input
-                  type="checkbox"
-                  checked={options.includeNavigation}
-                  onChange={(e) => setOptions(prev => ({ ...prev, includeNavigation: e.target.checked }))}
-                />
-                <span>Navigation</span>
-              </label>
-            </div>
-            
-            <div className="component-type">
-              <label>Component Type:</label>
-              <select
-                value={options.componentType}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
-                  componentType: e.target.value as GenerationOptions['componentType']
-                }))}
-              >
-                <option value="screen">Full Screen</option>
-                <option value="component">Reusable Component</option>
-                <option value="section">Section Component</option>
-              </select>
-            </div>
+          <div className="content">
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="overview-section">
+                {/* Device Summary */}
+                {state.devices.length > 0 && (
+                  <div className="summary-card">
+                    <h3>📱 Detected Devices</h3>
+                    <div className="device-list">
+                      {state.devices.map(device => (
+                        <div key={device.id} className={`device-item ${device.isBaseDevice ? 'base' : ''}`}>
+                          <span className="device-name">{device.name}</span>
+                          <span className="device-size">{device.width}×{device.height}</span>
+                          <span className={`device-type ${device.type}`}>{device.category.replace('_', ' ')}</span>
+                          {device.isBaseDevice && <span className="base-badge">BASE</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Theme Summary */}
+                {state.themeTokens && (
+                  <div className="summary-card">
+                    <h3>🎨 Design System</h3>
+                    <div className="token-stats">
+                      <div className="token-stat">
+                        <span className="count">{state.themeTokens.colors.length}</span>
+                        <span className="label">Colors</span>
+                      </div>
+                      <div className="token-stat">
+                        <span className="count">{state.themeTokens.typography.length}</span>
+                        <span className="label">Typography</span>
+                      </div>
+                      <div className="token-stat">
+                        <span className="count">{state.themeTokens.spacing.length}</span>
+                        <span className="label">Spacing</span>
+                      </div>
+                    </div>
+
+                    {/* Color Preview */}
+                    <div className="color-preview">
+                      {state.themeTokens.colors.slice(0, 8).map(color => (
+                        <div 
+                          key={color.name} 
+                          className="color-chip"
+                          style={{ backgroundColor: color.value }}
+                          title={`${color.name}: ${color.value}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="summary-card">
+                  <h3>🚀 Quick Actions</h3>
+                  <div className="quick-actions">
+                    <button 
+                      onClick={handleGenerateTheme}
+                      className="btn btn-secondary"
+                    >
+                      📄 Generate Theme File
+                    </button>
+                    <button 
+                      onClick={handleReanalyze}
+                      className="btn btn-secondary"
+                    >
+                      🔄 Reanalyze Design
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Layers Tab */}
+            {activeTab === 'layers' && (
+              <div className="layers-section">
+                <div className="section-header">
+                  <h3>📋 Screens & Components</h3>
+                  {state.selectedLayer && (
+                    <span className="selected-info">
+                      Selected: {state.selectedLayer.name}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="layers-tree">
+                  {state.layers.length > 0 ? (
+                    renderLayerTree(state.layers)
+                  ) : (
+                    <div className="no-layers">
+                      <p>No screen frames found.</p>
+                      <p>Create frames with device dimensions to get started.</p>
+                    </div>
+                  )}
+                </div>
+
+                {state.selectedLayer && (
+                  <div className="layer-details">
+                    <h4>📝 Layer Details</h4>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <span className="label">Type:</span>
+                        <span className="value">{state.selectedLayer.type}</span>
+                      </div>
+                      {state.selectedLayer.componentPattern && (
+                        <div className="detail-item">
+                          <span className="label">Pattern:</span>
+                          <span className="value">
+                            {state.selectedLayer.componentPattern.type} 
+                            ({Math.round(state.selectedLayer.componentPattern.confidence * 100)}%)
+                          </span>
+                        </div>
+                      )}
+                      {state.selectedLayer.properties?.width && (
+                        <div className="detail-item">
+                          <span className="label">Size:</span>
+                          <span className="value">
+                            {Math.round(state.selectedLayer.properties.width)}×{Math.round(state.selectedLayer.properties.height || 0)}
+                          </span>
+                        </div>
+                      )}
+                      {state.selectedLayer.children && (
+                        <div className="detail-item">
+                          <span className="label">Children:</span>
+                          <span className="value">{state.selectedLayer.children.length}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Options Tab */}
+            {activeTab === 'options' && (
+              <div className="options-section">
+                <h3>⚙️ Generation Options</h3>
+                
+                <div className="option-group">
+                  <h4>Code Generation</h4>
+                  <div className="options-grid">
+                    <label className="option-item">
+                      <input
+                        type="checkbox"
+                        checked={options.useTypeScript}
+                        onChange={(e) => setOptions(prev => ({ ...prev, useTypeScript: e.target.checked }))}
+                      />
+                      <span>TypeScript</span>
+                    </label>
+                    <label className="option-item">
+                      <input
+                        type="checkbox"
+                        checked={options.useResponsive}
+                        onChange={(e) => setOptions(prev => ({ ...prev, useResponsive: e.target.checked }))}
+                      />
+                      <span>Responsive</span>
+                    </label>
+                    <label className="option-item">
+                      <input
+                        type="checkbox"
+                        checked={options.useThemeTokens}
+                        onChange={(e) => setOptions(prev => ({ ...prev, useThemeTokens: e.target.checked }))}
+                      />
+                      <span>Theme Tokens</span>
+                    </label>
+                    <label className="option-item">
+                      <input
+                        type="checkbox"
+                        checked={options.includeNavigation}
+                        onChange={(e) => setOptions(prev => ({ ...prev, includeNavigation: e.target.checked }))}
+                      />
+                      <span>Navigation</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="option-group">
+                  <h4>Component Type</h4>
+                  <select
+                    value={options.componentType}
+                    onChange={(e) => setOptions(prev => ({ 
+                      ...prev, 
+                      componentType: e.target.value as GenerationOptions['componentType']
+                    }))}
+                    className="select-input"
+                  >
+                    <option value="screen">Full Screen Component</option>
+                    <option value="component">Reusable Component</option>
+                    <option value="section">Section Component</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <h4>Output Format</h4>
+                  <select
+                    value={options.outputFormat}
+                    onChange={(e) => setOptions(prev => ({ 
+                      ...prev, 
+                      outputFormat: e.target.value as GenerationOptions['outputFormat']
+                    }))}
+                    className="select-input"
+                  >
+                    <option value="single-file">Single File</option>
+                    <option value="separate-styles">Separate Styles</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -328,13 +469,6 @@ export const PluginUI: React.FC = () => {
               title="Generate React Native component from selected layer"
             >
               🚀 Generate Component
-            </button>
-          </div>
-
-          {/* Footer */}
-          <div className="footer">
-            <button onClick={handleReanalyze} className="btn btn-link">
-              🔄 Reanalyze Design System
             </button>
           </div>
         </div>

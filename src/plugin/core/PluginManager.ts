@@ -1,12 +1,18 @@
-// src/plugin/core/PluginManager.ts
+// src/plugin/core/PluginManager.ts - Enhanced with Full Integration
 import { DeviceDetector, DeviceInfo } from './DeviceDetector';
 import { ThemeGenerator, ThemeTokens } from './ThemeGenerator';
+import { ReactNativeGenerator } from '../generators/ReactNativeGenerator';
+import { LayerAnalyzer } from '../analyzers/LayerAnalyzer';
 import { LayerData } from '../types/FigmaTypes';
-import { 
-  UIToPluginMessage, 
-  PluginToUIMessage,
-  GenerationOptions 
-} from '../../shared/types/Messages';
+
+interface GenerationOptions {
+  useTypeScript: boolean;
+  useResponsive: boolean;
+  useThemeTokens: boolean;
+  componentType: 'screen' | 'component' | 'section';
+  includeNavigation: boolean;
+  outputFormat: 'single-file' | 'separate-styles';
+}
 
 interface PluginState {
   devices: DeviceInfo[];
@@ -32,7 +38,7 @@ export class PluginManager {
    * Initialize the plugin
    */
   private async initializePlugin() {
-    console.log('🚀 [PluginManager.ts:25] Enhanced Plugin starting...');
+    console.log('🚀 [PluginManager] Enhanced Plugin starting...');
     
     figma.showUI(__html__, { 
       width: 480, 
@@ -43,20 +49,20 @@ export class PluginManager {
     // Perform initial analysis
     await this.analyzeDesignSystem();
     
-    console.log('✅ [PluginManager.ts:35] Plugin initialized successfully');
+    console.log('✅ [PluginManager] Plugin initialized successfully');
   }
 
   /**
    * Setup message handler for UI communication
    */
   private setupMessageHandler() {
-    figma.ui.onmessage = async (msg: UIToPluginMessage) => {
-      console.log(`📨 [PluginManager.ts:43] Received message: ${msg.type}`);
+    figma.ui.onmessage = async (msg: any) => {
+      console.log(`📨 [PluginManager] Received message: ${msg.type}`);
       
       try {
         await this.handleMessage(msg);
       } catch (error) {
-        console.error(`❌ [PluginManager.ts:48] Error handling message:`, error);
+        console.error(`❌ [PluginManager] Error handling message:`, error);
         this.sendError(`Error: ${(error as Error).message}`);
       }
     };
@@ -65,7 +71,7 @@ export class PluginManager {
   /**
    * Handle incoming messages from UI
    */
-  private async handleMessage(msg: UIToPluginMessage) {
+  private async handleMessage(msg: any) {
     switch (msg.type) {
       case 'ui-ready':
         await this.handleUIReady();
@@ -96,7 +102,7 @@ export class PluginManager {
         break;
 
       default:
-        console.warn(`⚠️ [PluginManager.ts:82] Unknown message type: ${(msg as any).type}`);
+        console.warn(`⚠️ [PluginManager] Unknown message type: ${msg.type}`);
     }
   }
 
@@ -105,19 +111,19 @@ export class PluginManager {
    */
   private async analyzeDesignSystem() {
     try {
-      console.log('🔍 [PluginManager.ts:91] Analyzing design system...');
+      console.log('🔍 [PluginManager] Analyzing design system...');
       
       // 1. Detect all devices in the document
       this.state.devices = DeviceDetector.scanDocument();
-      console.log(`📱 [PluginManager.ts:95] Found ${this.state.devices.length} device types`);
+      console.log(`📱 [PluginManager] Found ${this.state.devices.length} device types`);
       
       // 2. Select base device for responsive calculations
       this.state.baseDevice = DeviceDetector.selectBaseDevice(this.state.devices);
-      console.log(`📐 [PluginManager.ts:99] Base device: ${this.state.baseDevice.name}`);
+      console.log(`📐 [PluginManager] Base device: ${this.state.baseDevice.name}`);
       
       // 3. Extract design tokens
       this.state.themeTokens = ThemeGenerator.analyzeDesignSystem();
-      console.log(`🎨 [PluginManager.ts:103] Extracted tokens:`, {
+      console.log(`🎨 [PluginManager] Extracted tokens:`, {
         colors: this.state.themeTokens.colors.length,
         typography: this.state.themeTokens.typography.length,
         spacing: this.state.themeTokens.spacing.length
@@ -126,7 +132,7 @@ export class PluginManager {
       this.state.isAnalyzed = true;
       
     } catch (error) {
-      console.error('❌ [PluginManager.ts:112] Error analyzing design system:', error);
+      console.error('❌ [PluginManager] Error analyzing design system:', error);
       this.sendError('Failed to analyze design system: ' + (error as Error).message);
     }
   }
@@ -177,25 +183,43 @@ export class PluginManager {
   }
 
   /**
-   * Handle React Native generation
+   * Handle React Native generation with enhanced analysis
    */
   private async handleGenerateReactNative(layerId: string, options: GenerationOptions) {
     if (!this.state.isAnalyzed) {
       throw new Error('Design system not analyzed yet');
     }
 
+    console.log(`🚀 [PluginManager] Generating React Native for layer: ${layerId}`);
+
     const node = await figma.getNodeByIdAsync(layerId);
     if (!node) {
       throw new Error('Layer not found');
     }
 
-    // For now, generate a basic component structure
-    const layerData = this.extractLayerData(node as SceneNode, 4);
-    const rnCode = this.generateBasicReactNativeComponent(layerData, options);
+    // Extract detailed layer data with enhanced analysis
+    const layerData = this.extractEnhancedLayerData(node as SceneNode, 4);
+    
+    // Create generation context
+    const context = {
+      baseDevice: this.state.baseDevice!,
+      themeTokens: this.state.themeTokens,
+      options,
+      componentName: this.sanitizeComponentName(layerData.name),
+      usedComponents: new Set<string>(),
+      imports: new Set<string>(),
+      hooks: new Set<string>(),
+      stateVariables: [] as string[]
+    };
+
+    // Generate React Native component using enhanced generator
+    const generatedComponent = ReactNativeGenerator.generateComponent(layerData, context);
+    
+    console.log(`✅ [PluginManager] Generated ${generatedComponent.code.length} characters of code`);
     
     this.sendMessage({
       type: 'react-native-generated',
-      data: rnCode
+      data: generatedComponent.code
     });
   }
 
@@ -219,7 +243,7 @@ export class PluginManager {
   }
 
   /**
-   * Get current page layers
+   * Get current page layers with screen detection
    */
   private getCurrentPageLayers(): LayerData[] {
     try {
@@ -231,9 +255,9 @@ export class PluginManager {
         child.type === 'FRAME' && this.isScreenFrame(child)
       );
 
-      return screenFrames.map(frame => this.extractLayerData(frame));
+      return screenFrames.map(frame => this.extractEnhancedLayerData(frame));
     } catch (error) {
-      console.error('[PluginManager.ts:207] Error getting current page layers:', error);
+      console.error('[PluginManager] Error getting current page layers:', error);
       return [];
     }
   }
@@ -254,13 +278,16 @@ export class PluginManager {
     // Check if name suggests it's a screen
     const hasScreenName = /screen|page|view|layout|mobile|tablet|desktop|iphone|ipad|android/.test(name);
 
-    return matchesDevice || hasScreenName || frame.children.length >= 3;
+    // Check if it has substantial content
+    const hasSubstantialContent = frame.children.length >= 3;
+
+    return matchesDevice || hasScreenName || hasSubstantialContent;
   }
 
   /**
-   * Extract layer data with enhanced information
+   * Extract enhanced layer data with analysis
    */
-  private extractLayerData(node: SceneNode, maxDepth: number = 3, currentDepth: number = 0): LayerData {
+  private extractEnhancedLayerData(node: SceneNode, maxDepth: number = 3, currentDepth: number = 0): LayerData {
     try {
       const layerData: LayerData = {
         id: node.id,
@@ -272,14 +299,31 @@ export class PluginManager {
         deviceInfo: this.getNodeDeviceInfo(node)
       };
 
+      // Add enhanced analysis
+      if (this.state.isAnalyzed) {
+        try {
+          layerData.layoutAnalysis = LayerAnalyzer.analyzeLayout(layerData);
+          layerData.componentPattern = LayerAnalyzer.detectComponentPattern(layerData);
+          layerData.visualProperties = LayerAnalyzer.extractVisualProperties(layerData);
+          
+          if (layerData.type === 'TEXT') {
+            layerData.textAnalysis = LayerAnalyzer.analyzeText(layerData);
+          }
+
+          console.log(`🔍 [PluginManager] Enhanced analysis for ${layerData.name}: ${layerData.componentPattern?.type} (${layerData.componentPattern?.confidence.toFixed(2)})`);
+        } catch (analysisError) {
+          console.warn('⚠️ [PluginManager] Analysis error for layer:', layerData.name, analysisError);
+        }
+      }
+
       // Process children if within depth limit
       if (currentDepth < maxDepth && 'children' in node && node.children && node.children.length > 0) {
         const childrenToProcess = node.children.slice(0, 25);
         layerData.children = childrenToProcess.map(child => {
           try {
-            return this.extractLayerData(child, maxDepth, currentDepth + 1);
+            return this.extractEnhancedLayerData(child, maxDepth, currentDepth + 1);
           } catch (error) {
-            console.warn('⚠️ [PluginManager.ts:246] Error processing child node:', error);
+            console.warn('⚠️ [PluginManager] Error processing child node:', error);
             return {
               id: child.id,
               name: child.name || 'Error Loading',
@@ -293,7 +337,7 @@ export class PluginManager {
 
       return layerData;
     } catch (error) {
-      console.error('❌ [PluginManager.ts:258] Error extracting layer data:', error);
+      console.error('❌ [PluginManager] Error extracting enhanced layer data:', error);
       throw error;
     }
   }
@@ -309,31 +353,50 @@ export class PluginManager {
       height: 'height' in node ? node.height : undefined,
     };
 
-    // Extract layout properties
+    // Extract layout properties for auto-layout frames
     if ('layoutMode' in node) {
       props.layoutMode = node.layoutMode;
-      props.itemSpacing = 'itemSpacing' in node ? node.itemSpacing : undefined;
-      props.paddingLeft = 'paddingLeft' in node ? node.paddingLeft : undefined;
-      props.paddingRight = 'paddingRight' in node ? node.paddingRight : undefined;
-      props.paddingTop = 'paddingTop' in node ? node.paddingTop : undefined;
-      props.paddingBottom = 'paddingBottom' in node ? node.paddingBottom : undefined;
+      if ('itemSpacing' in node) props.itemSpacing = node.itemSpacing;
+      if ('paddingLeft' in node) props.paddingLeft = node.paddingLeft;
+      if ('paddingRight' in node) props.paddingRight = node.paddingRight;
+      if ('paddingTop' in node) props.paddingTop = node.paddingTop;
+      if ('paddingBottom' in node) props.paddingBottom = node.paddingBottom;
+      if ('primaryAxisAlignItems' in node) props.primaryAxisAlignItems = node.primaryAxisAlignItems;
+      if ('counterAxisAlignItems' in node) props.counterAxisAlignItems = node.counterAxisAlignItems;
     }
 
     // Extract visual properties
     if ('fills' in node && node.fills) {
-      props.fills = node.fills;
+      props.fills = Array.isArray(node.fills) ? node.fills : [node.fills];
+    }
+
+    if ('strokes' in node && node.strokes) {
+      props.strokes = Array.isArray(node.strokes) ? node.strokes : [node.strokes];
+      if ('strokeWeight' in node) props.strokeWeight = node.strokeWeight;
     }
 
     if ('cornerRadius' in node) {
       props.cornerRadius = node.cornerRadius;
     }
 
-    // Extract text properties
+    if ('effects' in node && node.effects) {
+      props.effects = Array.isArray(node.effects) ? node.effects : [node.effects];
+    }
+
+    if ('opacity' in node) {
+      props.opacity = node.opacity;
+    }
+
+    // Extract text properties for text nodes
     if (node.type === 'TEXT') {
       const textNode = node as TextNode;
       props.fontSize = textNode.fontSize;
       props.fontName = textNode.fontName;
       props.characters = textNode.characters;
+      props.textAlignHorizontal = textNode.textAlignHorizontal;
+      props.textAlignVertical = textNode.textAlignVertical;
+      props.lineHeight = textNode.lineHeight;
+      props.letterSpacing = textNode.letterSpacing;
     }
 
     return props;
@@ -359,61 +422,19 @@ export class PluginManager {
   }
 
   /**
-   * Generate basic React Native component (placeholder for full implementation)
-   */
-  private generateBasicReactNativeComponent(layerData: LayerData, options: GenerationOptions): string {
-    const componentName = this.sanitizeComponentName(layerData.name);
-    
-    return `import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ${options.useResponsive ? 'Dimensions,' : ''}
-} from 'react-native';
-${options.useThemeTokens ? "\nimport { COLORS, FONTS, normalize, scale, verticalScale } from './theme';" : ''}
-
-${options.useResponsive ? 'const { width: SCREEN_WIDTH } = Dimensions.get("window");' : ''}
-
-${options.useTypeScript ? 'const ' : 'const '}${componentName}${options.useTypeScript ? ': React.FC' : ''} = () => {
-  return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>${layerData.name}</Text>
-      {/* Generated component structure will go here */}
-    </ScrollView>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: ${options.useThemeTokens ? 'COLORS.Background || "#FFFFFF"' : '"#FFFFFF"'},
-  },
-  title: {
-    fontSize: ${options.useResponsive ? 'normalize(24)' : '24'},
-    ${options.useThemeTokens ? 'fontFamily: FONTS.interBold,' : 'fontWeight: "bold",'}
-    color: ${options.useThemeTokens ? 'COLORS.Navy || "#000000"' : '"#000000"'},
-    textAlign: 'center',
-    marginVertical: ${options.useResponsive ? 'verticalScale(20)' : '20'},
-  },
-});
-
-export default ${componentName};`;
-  }
-
-  /**
-   * Sanitize component name
+   * Sanitize component name for React
    */
   private sanitizeComponentName(name: string): string {
-    return name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component$&') || 'GeneratedComponent';
+    // Remove special characters and ensure it starts with a letter
+    const sanitized = name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component    if ('cornerRadius' in node) {
+      props.cornerRadius = node.cornerRadius;');
+    return sanitized || 'GeneratedComponent';
   }
 
   /**
    * Send message to UI
    */
-  private sendMessage(message: PluginToUIMessage) {
+  private sendMessage(message: any) {
     figma.ui.postMessage(message);
   }
 
@@ -431,7 +452,7 @@ export default ${componentName};`;
    * Cleanup when plugin closes
    */
   cleanup() {
-    console.log('🔄 [PluginManager.ts:392] Plugin cleaning up...');
+    console.log('🔄 [PluginManager] Plugin cleaning up...');
     // Perform any necessary cleanup
   }
 }

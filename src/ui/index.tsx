@@ -1,22 +1,17 @@
-// src/ui/index.tsx - UI bootstrap
+// src/ui/index.tsx - Main UI Entry Point
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import { PluginUI } from './components/PluginUI';
+import './styles/global.css';
 
-console.log('🎨 [index.tsx:5] Starting Figma to React Native UI...');
+console.log('🎨 [UI] Starting Enhanced Figma to React Native UI...');
 
 const container = document.getElementById('root');
-
 if (!container) {
   throw new Error('Root element not found');
 }
 
 const root = createRoot(container);
+root.render(<PluginUI />);
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-
-console.log('✅ [index.tsx:19] UI rendered successfully');
+console.log('✅ [UI] UI initialized successfully');
