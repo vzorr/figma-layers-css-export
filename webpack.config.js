@@ -6,6 +6,8 @@ module.exports = (env) => {
   const isProduction = process.env.NODE_ENV === 'production';
   const target = env?.target || 'plugin';
 
+  console.log(`🔧 Building ${target} in ${isProduction ? 'production' : 'development'} mode`);
+
   const commonConfig = {
     mode: isProduction ? 'production' : 'development',
     devtool: isProduction ? 'source-map' : 'eval-source-map',
@@ -25,10 +27,21 @@ module.exports = (env) => {
           use: {
             loader: 'ts-loader',
             options: {
-              configFile: target === 'plugin' 
-                ? path.resolve(__dirname, 'tsconfig.plugin.json')
-                : path.resolve(__dirname, 'tsconfig.ui.json'),
-              transpileOnly: false,
+              configFile: path.resolve(__dirname, 'tsconfig.json'),
+              transpileOnly: false, // Keep type checking
+              compilerOptions: target === 'plugin' ? {
+                target: 'ES2017',
+                lib: ['ES2017'],
+                module: 'CommonJS',
+                jsx: 'preserve',
+                moduleResolution: 'node'
+              } : {
+                target: 'ES2020',
+                lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+                module: 'ESNext',
+                jsx: 'react-jsx',
+                moduleResolution: 'node'
+              }
             },
           },
           exclude: /node_modules/,
@@ -38,6 +51,7 @@ module.exports = (env) => {
     stats: {
       errorDetails: true,
       children: true,
+      colors: true,
     },
   };
 
@@ -52,6 +66,10 @@ module.exports = (env) => {
         clean: {
           keep: /ui\.(html|js|css)$/,
         },
+        // Ensure proper module format for Figma
+        library: {
+          type: 'commonjs2'
+        }
       },
       target: 'node',
       externals: {
@@ -62,6 +80,12 @@ module.exports = (env) => {
         moduleIds: 'named',
         chunkIds: 'named',
       },
+      // Plugin-specific performance hints
+      performance: {
+        maxAssetSize: 1000000, // 1MB - Figma plugins should be reasonably sized
+        maxEntrypointSize: 1000000,
+        hints: isProduction ? 'warning' : false
+      }
     };
   }
 
@@ -97,8 +121,23 @@ module.exports = (env) => {
         filename: 'ui.html',
         chunks: ['ui'],
         inject: 'body',
+        minify: isProduction ? {
+          removeComments: true,
+          collapseWhitespace: true,
+          removeRedundantAttributes: true,
+          useShortDoctype: true,
+          removeEmptyAttributes: true,
+          removeStyleLinkTypeAttributes: true,
+          keepClosingSlash: true,
+          minifyJS: true,
+          minifyCSS: true,
+          minifyURLs: true,
+        } : false,
       }),
-      ...(isProduction ? [new MiniCssExtractPlugin({ filename: 'ui.css' })] : []),
+      ...(isProduction ? [new MiniCssExtractPlugin({ 
+        filename: 'ui.css',
+        chunkFilename: '[id].css'
+      })] : []),
     ],
     optimization: {
       minimize: isProduction,
@@ -109,9 +148,22 @@ module.exports = (env) => {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
+            priority: 10,
+          },
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            chunks: 'all',
+            priority: 20,
           },
         },
       },
     },
+    // UI-specific performance hints
+    performance: {
+      maxAssetSize: 500000, // 500KB - UI should be lightweight
+      maxEntrypointSize: 500000,
+      hints: isProduction ? 'warning' : false
+    }
   };
 };

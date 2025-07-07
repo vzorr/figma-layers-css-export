@@ -1,85 +1,17 @@
-// src/plugin/analyzers/LayerAnalyzer.ts
-import { LayerData, NodeProperties } from '../types/FigmaTypes';
-import { DeviceInfo } from '../core/DeviceDetector';
-
-export interface EdgeInsets {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface LayoutAnalysis {
-  layoutType: 'flex' | 'absolute' | 'stack' | 'grid';
-  flexDirection?: 'row' | 'column';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
-  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
-  spacing?: number;
-  padding?: EdgeInsets;
-  gap?: number;
-  isScrollable?: boolean;
-}
-
-export interface ComponentPattern {
-  type: 'button' | 'input' | 'card' | 'list-item' | 'header' | 'navigation' | 'image' | 'text' | 'container' | 'custom';
-  confidence: number;
-  properties: Record<string, any>;
-  interactionType?: 'touchable' | 'scrollable' | 'static';
-  hasText?: boolean;
-  hasImage?: boolean;
-  isInteractive?: boolean;
-}
-
-export interface VisualProperties {
-  backgroundColor?: string;
-  borderRadius?: number;
-  borderWidth?: number;
-  borderColor?: string;
-  shadowProperties?: ShadowProperties;
-  opacity?: number;
-  rotation?: number;
-}
-
-export interface ShadowProperties {
-  shadowColor: string;
-  shadowOffset: { width: number; height: number };
-  shadowOpacity: number;
-  shadowRadius: number;
-  elevation?: number; // Android
-}
-
-export interface HierarchyAnalysis {
-  depth: number;
-  parentType?: string;
-  childrenCount: number;
-  isLeaf: boolean;
-  isContainer: boolean;
-  position: 'relative' | 'absolute';
-  zIndex?: number;
-}
-
-export interface TextAnalysis {
-  content: string;
-  fontSize: number;
-  fontWeight: string;
-  fontFamily: string;
-  color: string;
-  textAlign?: 'left' | 'center' | 'right';
-  lineHeight?: number;
-  letterSpacing?: number;
-  isHeading?: boolean;
-  isButton?: boolean;
-  isLabel?: boolean;
-}
-
-export interface ResponsiveAnalysis {
-  baseWidth: number;
-  baseHeight: number;
-  scaleType: 'fixed' | 'responsive' | 'flexible';
-  minWidth?: number;
-  maxWidth?: number;
-  aspectRatio?: number;
-}
+// src/plugin/analyzers/LayerAnalyzer.ts - Complete Updated Version
+import { 
+  LayerData, 
+  NodeProperties, 
+  DeviceInfo,
+  EdgeInsets,
+  LayoutAnalysis,
+  ComponentPattern,
+  VisualProperties,
+  ShadowProperties,
+  HierarchyAnalysis,
+  TextAnalysis,
+  ResponsiveAnalysis
+} from '../../shared/types';
 
 export class LayerAnalyzer {
   
@@ -258,13 +190,13 @@ export class LayerAnalyzer {
     
     const analysis: TextAnalysis = {
       content: props.characters || layer.name || '',
-      fontSize: props.fontSize || 16,
+      fontSize: (typeof props.fontSize === 'number') ? props.fontSize : 16,
       fontWeight: this.mapFigmaFontWeight(props.fontName?.style || 'Regular'),
       fontFamily: props.fontName?.family || 'Inter',
       color: this.extractTextColor(props),
       textAlign: this.mapFigmaTextAlign(props.textAlignHorizontal),
-      lineHeight: props.lineHeight?.value,
-      letterSpacing: props.letterSpacing?.value
+      lineHeight: (typeof props.lineHeight?.value === 'number') ? props.lineHeight.value : undefined,
+      letterSpacing: (typeof props.letterSpacing?.value === 'number') ? props.letterSpacing.value : undefined
     };
 
     // Determine text type
@@ -381,7 +313,7 @@ export class LayerAnalyzer {
 
     // Check if it has shadow or border
     if (props.effects?.some(effect => effect.type === 'DROP_SHADOW')) confidence += 0.3;
-    if (props.strokes?.length > 0) confidence += 0.2;
+    if (props.strokes?.length && props.strokes.length > 0) confidence += 0.2;
 
     // Check if it has rounded corners
     if (props.cornerRadius && props.cornerRadius > 4) confidence += 0.2;
@@ -394,7 +326,7 @@ export class LayerAnalyzer {
       confidence: Math.min(confidence, 1),
       properties: {
         hasElevation: !!(props.effects?.some(effect => effect.type === 'DROP_SHADOW')),
-        hasBorder: !!(props.strokes?.length > 0),
+        hasBorder: !!(props.strokes?.length && props.strokes.length > 0),
         childrenCount: layer.children?.length || 0
       },
       interactionType: this.isClickableCard(layer) ? 'touchable' : 'static',
@@ -603,24 +535,24 @@ export class LayerAnalyzer {
       .join(' ');
   }
 
-  private static mapFigmaJustifyContent(align: string): LayoutAnalysis['justifyContent'] {
+  private static mapFigmaJustifyContent(align?: string): LayoutAnalysis['justifyContent'] {
     const mapping: Record<string, LayoutAnalysis['justifyContent']> = {
       'MIN': 'flex-start',
       'CENTER': 'center',
       'MAX': 'flex-end',
       'SPACE_BETWEEN': 'space-between'
     };
-    return mapping[align] || 'flex-start';
+    return mapping[align || ''] || 'flex-start';
   }
 
-  private static mapFigmaAlignItems(align: string): LayoutAnalysis['alignItems'] {
+  private static mapFigmaAlignItems(align?: string): LayoutAnalysis['alignItems'] {
     const mapping: Record<string, LayoutAnalysis['alignItems']> = {
       'MIN': 'flex-start',
       'CENTER': 'center',
       'MAX': 'flex-end',
       'STRETCH': 'stretch'
     };
-    return mapping[align] || 'flex-start';
+    return mapping[align || ''] || 'flex-start';
   }
 
   private static mapFigmaFontWeight(style: string): string {
@@ -647,7 +579,7 @@ export class LayerAnalyzer {
     return mapping[align || ''] || 'left';
   }
 
-  private static rgbToHex(rgb: any): string {
+  private static rgbToHex(rgb: RGB | null): string {
     if (!rgb || typeof rgb.r !== 'number') return '#000000';
     
     const r = Math.round(rgb.r * 255);
@@ -735,7 +667,7 @@ export class LayerAnalyzer {
     return /clickable|tap|press|card/.test(name);
   }
 
-  private static hasListLikeParent(layer: LayerData): boolean {
+  private static hasListLikeParent(_layer: LayerData): boolean {
     // This would need parent context, for now return false
     return false;
   }
@@ -788,7 +720,6 @@ export class LayerAnalyzer {
   }
 
   private static determineTextType(layer: LayerData): string {
-    const text = layer.properties?.characters || layer.name || '';
     const fontSize = layer.properties?.fontSize || 16;
     
     if (fontSize >= 24) return 'heading';

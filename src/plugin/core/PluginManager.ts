@@ -1,18 +1,15 @@
-// src/plugin/core/PluginManager.ts - Fixed and Enhanced
-import { DeviceDetector, DeviceInfo } from './DeviceDetector';
-import { ThemeGenerator, ThemeTokens } from './ThemeGenerator';
+// src/plugin/core/PluginManager.ts - Fixed TypeScript Null Issues
+import { DeviceDetector } from './DeviceDetector';
+import { ThemeGenerator } from './ThemeGenerator';
 import { ReactNativeGenerator } from '../generators/ReactNativeGenerator';
 import { LayerAnalyzer } from '../analyzers/LayerAnalyzer';
-import { LayerData } from '../types/FigmaTypes';
-
-interface GenerationOptions {
-  useTypeScript: boolean;
-  useResponsive: boolean;
-  useThemeTokens: boolean;
-  componentType: 'screen' | 'component' | 'section';
-  includeNavigation: boolean;
-  outputFormat: 'single-file' | 'separate-styles';
-}
+import { 
+  DeviceInfo,
+  ThemeTokens,
+  LayerData,
+  GenerationOptions,
+  NodeProperties
+} from '../../shared/types';
 
 interface PluginState {
   devices: DeviceInfo[];
@@ -121,15 +118,23 @@ export class PluginManager {
       
       // 2. Select base device for responsive calculations
       this.state.baseDevice = DeviceDetector.selectBaseDevice(this.state.devices);
-      console.log(`📐 [PluginManager] Base device: ${this.state.baseDevice.name}`);
+      if (this.state.baseDevice) {
+        console.log(`📐 [PluginManager] Base device: ${this.state.baseDevice.name}`);
+      } else {
+        console.warn('⚠️ [PluginManager] No base device selected');
+      }
       
       // 3. Extract design tokens
       this.state.themeTokens = ThemeGenerator.analyzeDesignSystem();
-      console.log(`🎨 [PluginManager] Extracted tokens:`, {
-        colors: this.state.themeTokens.colors.length,
-        typography: this.state.themeTokens.typography.length,
-        spacing: this.state.themeTokens.spacing.length
-      });
+      
+      // Safe access to themeTokens properties with null checks
+      if (this.state.themeTokens) {
+        console.log(`🎨 [PluginManager] Extracted tokens:`, {
+          colors: this.state.themeTokens.colors.length,
+          typography: this.state.themeTokens.typography.length,
+          spacing: this.state.themeTokens.spacing.length
+        });
+      }
       
       // 4. Get current page layers
       this.state.currentLayers = this.getCurrentPageLayers();
@@ -192,7 +197,7 @@ export class PluginManager {
    * Handle React Native generation with enhanced analysis
    */
   private async handleGenerateReactNative(layerId: string, options: GenerationOptions) {
-    if (!this.state.isAnalyzed) {
+    if (!this.state.isAnalyzed || !this.state.baseDevice) {
       throw new Error('Design system not analyzed yet');
     }
 
@@ -206,9 +211,9 @@ export class PluginManager {
     // Extract detailed layer data with enhanced analysis
     const layerData = this.extractEnhancedLayerData(node as SceneNode, 4);
     
-    // Create generation context
+    // Create generation context with guaranteed non-null base device
     const context = {
-      baseDevice: this.state.baseDevice!,
+      baseDevice: this.state.baseDevice, // Already checked above
       themeTokens: this.state.themeTokens,
       options,
       componentName: this.sanitizeComponentName(layerData.name),
@@ -313,7 +318,10 @@ export class PluginManager {
           layerData.visualProperties = LayerAnalyzer.extractVisualProperties(layerData);
           
           if (layerData.type === 'TEXT') {
-            layerData.textAnalysis = LayerAnalyzer.analyzeText(layerData);
+            const textAnalysis = LayerAnalyzer.analyzeText(layerData);
+            if (textAnalysis !== null) {
+              layerData.textAnalysis = textAnalysis;
+            }
           }
 
           console.log(`🔍 [PluginManager] Enhanced analysis for ${layerData.name}: ${layerData.componentPattern?.type} (${layerData.componentPattern?.confidence.toFixed(2)})`);
@@ -349,10 +357,10 @@ export class PluginManager {
   }
 
   /**
-   * Extract comprehensive node properties
+   * Extract comprehensive node properties with null safety
    */
-  private extractNodeProperties(node: SceneNode): any {
-    const props: any = {
+  private extractNodeProperties(node: SceneNode): NodeProperties {
+    const props: NodeProperties = {
       x: 'x' in node ? node.x : undefined,
       y: 'y' in node ? node.y : undefined,
       width: 'width' in node ? node.width : undefined,
@@ -362,41 +370,77 @@ export class PluginManager {
     // Extract layout properties for auto-layout frames
     if ('layoutMode' in node) {
       props.layoutMode = node.layoutMode;
-      if ('itemSpacing' in node) props.itemSpacing = node.itemSpacing;
-      if ('paddingLeft' in node) props.paddingLeft = node.paddingLeft;
-      if ('paddingRight' in node) props.paddingRight = node.paddingRight;
-      if ('paddingTop' in node) props.paddingTop = node.paddingTop;
-      if ('paddingBottom' in node) props.paddingBottom = node.paddingBottom;
+      
+      // Safe extraction of spacing properties (can be figma.mixed)
+      if ('itemSpacing' in node && typeof node.itemSpacing === 'number') {
+        props.itemSpacing = node.itemSpacing;
+      }
+      if ('paddingLeft' in node && typeof node.paddingLeft === 'number') {
+        props.paddingLeft = node.paddingLeft;
+      }
+      if ('paddingRight' in node && typeof node.paddingRight === 'number') {
+        props.paddingRight = node.paddingRight;
+      }
+      if ('paddingTop' in node && typeof node.paddingTop === 'number') {
+        props.paddingTop = node.paddingTop;
+      }
+      if ('paddingBottom' in node && typeof node.paddingBottom === 'number') {
+        props.paddingBottom = node.paddingBottom;
+      }
       if ('primaryAxisAlignItems' in node) props.primaryAxisAlignItems = node.primaryAxisAlignItems;
       if ('counterAxisAlignItems' in node) props.counterAxisAlignItems = node.counterAxisAlignItems;
     }
 
-    // Extract visual properties
+    // Extract visual properties with null checks
     if ('fills' in node && node.fills) {
       props.fills = Array.isArray(node.fills) ? node.fills : [node.fills];
     }
 
     if ('strokes' in node && node.strokes) {
       props.strokes = Array.isArray(node.strokes) ? node.strokes : [node.strokes];
-      if ('strokeWeight' in node) props.strokeWeight = node.strokeWeight;
+      if ('strokeWeight' in node && typeof node.strokeWeight === 'number') {
+        props.strokeWeight = node.strokeWeight;
+      }
     }
 
-    if ('cornerRadius' in node) {
-      props.cornerRadius = node.cornerRadius;
+    // Safe cornerRadius extraction (can be figma.mixed)
+    if ('cornerRadius' in node && node.cornerRadius !== undefined) {
+      if (typeof node.cornerRadius === 'number') {
+        props.cornerRadius = node.cornerRadius;
+      } else if (typeof node.cornerRadius === 'object' && node.cornerRadius !== null) {
+        // For mixed corner radius, use the first value or calculate average
+        const cornerRadiusObj = node.cornerRadius as any;
+        if (typeof cornerRadiusObj === 'object') {
+          // Try to get a representative value
+          props.cornerRadius = cornerRadiusObj.topLeftRadius || cornerRadiusObj[0] || 0;
+        }
+      }
+      // If it's figma.mixed, skip it (don't assign)
     }
 
     if ('effects' in node && node.effects) {
       props.effects = Array.isArray(node.effects) ? node.effects : [node.effects];
     }
 
-    if ('opacity' in node) {
+    // Safe opacity extraction (can be figma.mixed)
+    if ('opacity' in node && typeof node.opacity === 'number') {
       props.opacity = node.opacity;
     }
 
-    // Extract text properties for text nodes
+    // Safe rotation extraction (can be figma.mixed)
+    if ('rotation' in node && typeof node.rotation === 'number') {
+      props.rotation = node.rotation;
+    }
+
+    // Extract text properties for text nodes with null safety
     if (node.type === 'TEXT') {
       const textNode = node as TextNode;
-      props.fontSize = textNode.fontSize;
+      
+      // Safe fontSize extraction (can be figma.mixed)
+      if (typeof textNode.fontSize === 'number') {
+        props.fontSize = textNode.fontSize;
+      }
+      
       props.fontName = textNode.fontName;
       props.characters = textNode.characters;
       props.textAlignHorizontal = textNode.textAlignHorizontal;
@@ -432,7 +476,10 @@ export class PluginManager {
    */
   private sanitizeComponentName(name: string): string {
     // Remove special characters and ensure it starts with a letter
-    const sanitized = name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component');
+    const sanitized = name
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .replace(/^\d/, 'Component');
+    
     return sanitized || 'GeneratedComponent';
   }
 

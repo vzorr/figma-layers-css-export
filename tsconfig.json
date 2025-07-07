@@ -1,4 +1,3 @@
-// tsconfig.json - Base TypeScript configuration
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -13,9 +12,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
     "sourceMap": true,
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
@@ -37,53 +36,5 @@
     "build",
     "**/*.test.ts",
     "**/*.test.tsx"
-  ]
-}
-
-// tsconfig.plugin.json - Plugin-specific configuration
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["ES2017"],
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "jsx": "preserve",
-    "noEmit": false,
-    "outDir": "./build/plugin",
-    "rootDir": "./src/plugin"
-  },
-  "include": [
-    "src/plugin/**/*",
-    "src/shared/**/*"
-  ],
-  "exclude": [
-    "src/ui/**/*",
-    "node_modules",
-    "dist"
-  ]
-}
-
-// tsconfig.ui.json - UI-specific configuration  
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "jsx": "react-jsx",
-    "noEmit": false,
-    "outDir": "./build/ui",
-    "rootDir": "./src/ui"
-  },
-  "include": [
-    "src/ui/**/*",
-    "src/shared/**/*"
-  ],
-  "exclude": [
-    "src/plugin/**/*",
-    "node_modules",
-    "dist"
   ]
 }

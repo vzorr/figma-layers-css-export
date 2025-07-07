@@ -2,7 +2,7 @@
   "name": "Figma to React Native",
   "id": "figma-to-react-native-theme-generator",
   "api": "1.0.0",
-  "main": "dist/plugin.js",
+  "main": "dist/code.js",
   "ui": "dist/ui.html",
   "capabilities": [],
   "enableProposedApi": false,

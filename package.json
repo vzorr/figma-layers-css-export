@@ -4,18 +4,17 @@
   "description": "Figma to React Native Plugin with Automatic Theme Generation",
   "main": "dist/code.js",
   "scripts": {
-    "build": "npm run clean && npm run build:plugin && npm run build:ui",
+    "build": "node scripts/build.js",
     "build:plugin": "webpack --config webpack.config.js --env target=plugin --mode=production",
     "build:ui": "webpack --config webpack.config.js --env target=ui --mode=production",
-    "dev": "npm run clean && npm run dev:plugin & npm run dev:ui",
+    "dev": "node scripts/dev.js",
     "dev:plugin": "webpack --config webpack.config.js --env target=plugin --mode=development --watch",
     "dev:ui": "webpack --config webpack.config.js --env target=ui --mode=development --watch",
-    "clean": "rimraf dist",
+    "clean": "node scripts/clean.js",
     "type-check": "tsc --noEmit",
-    "type-check:plugin": "tsc --project tsconfig.plugin.json --noEmit",
-    "type-check:ui": "tsc --project tsconfig.ui.json --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "postinstall": "npm run type-check"
   },
   "keywords": [
     "figma",
@@ -35,6 +34,7 @@
   "devDependencies": {
     "@figma/eslint-plugin-figma-plugins": "^0.15.0",
     "@figma/plugin-typings": "^1.95.0",
+    "@types/figma": "^1.0.4",
     "@types/node": "^20.19.4",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",

@@ -1,5 +1,4 @@
-// src/shared/types.ts - Consolidated Types for Plugin
-import { LayoutAnalysis, ComponentPattern, VisualProperties, TextAnalysis } from '../plugin/analyzers/LayerAnalyzer';
+// src/shared/types.ts - Complete Consolidated Types for Plugin
 
 // ============================================================================
 // DEVICE DETECTION TYPES
@@ -69,8 +68,91 @@ export interface ThemeTokens {
   colors: ColorToken[];
   typography: TypographyToken[];
   spacing: SpacingToken[];
-  shadows: any[];
-  borderRadius: any[];
+  shadows: unknown[];
+  borderRadius: unknown[];
+}
+
+// ============================================================================
+// LAYER ANALYSIS TYPES
+// ============================================================================
+
+export interface EdgeInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface LayoutAnalysis {
+  layoutType: 'flex' | 'absolute' | 'stack' | 'grid';
+  flexDirection?: 'row' | 'column';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  spacing?: number;
+  padding?: EdgeInsets;
+  gap?: number;
+  isScrollable?: boolean;
+}
+
+export interface ComponentPattern {
+  type: 'button' | 'input' | 'card' | 'list-item' | 'header' | 'navigation' | 'image' | 'text' | 'container' | 'custom';
+  confidence: number;
+  properties: Record<string, unknown>;
+  interactionType?: 'touchable' | 'scrollable' | 'static';
+  hasText?: boolean;
+  hasImage?: boolean;
+  isInteractive?: boolean;
+}
+
+export interface VisualProperties {
+  backgroundColor?: string;
+  borderRadius?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  shadowProperties?: ShadowProperties;
+  opacity?: number;
+  rotation?: number;
+}
+
+export interface ShadowProperties {
+  shadowColor: string;
+  shadowOffset: { width: number; height: number };
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation?: number; // Android
+}
+
+export interface HierarchyAnalysis {
+  depth: number;
+  parentType?: string;
+  childrenCount: number;
+  isLeaf: boolean;
+  isContainer: boolean;
+  position: 'relative' | 'absolute';
+  zIndex?: number;
+}
+
+export interface TextAnalysis {
+  content: string;
+  fontSize: number;
+  fontWeight: string;
+  fontFamily: string;
+  color: string;
+  textAlign?: 'left' | 'center' | 'right';
+  lineHeight?: number;
+  letterSpacing?: number;
+  isHeading?: boolean;
+  isButton?: boolean;
+  isLabel?: boolean;
+}
+
+export interface ResponsiveAnalysis {
+  baseWidth: number;
+  baseHeight: number;
+  scaleType: 'fixed' | 'responsive' | 'flexible';
+  minWidth?: number;
+  maxWidth?: number;
+  aspectRatio?: number;
 }
 
 // ============================================================================
@@ -94,22 +176,22 @@ export interface NodeProperties {
   counterAxisAlignItems?: string;
   
   // Visual properties
-  fills?: any[];
-  strokes?: any[];
+  fills?: unknown[];
+  strokes?: unknown[];
   strokeWeight?: number;
   cornerRadius?: number;
-  effects?: any[];
+  effects?: unknown[];
   opacity?: number;
   rotation?: number;
   
   // Text properties
   fontSize?: number;
-  fontName?: any;
+  fontName?: unknown;
   textAlignHorizontal?: string;
   textAlignVertical?: string;
   characters?: string;
-  lineHeight?: any;
-  letterSpacing?: any;
+  lineHeight?: unknown;
+  letterSpacing?: unknown;
 }
 
 export interface LayerData {
@@ -269,11 +351,3 @@ export interface UIState {
   generatedCode: string;
   options: GenerationOptions;
 }
-
-// Re-export analyzer types for convenience
-export type {
-  LayoutAnalysis,
-  ComponentPattern,
-  VisualProperties,
-  TextAnalysis
-} from '../plugin/analyzers/LayerAnalyzer';

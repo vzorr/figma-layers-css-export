@@ -1,26 +1,5 @@
-// DeviceDetector.ts - Automatic device detection from Figma frames
-
-export interface DeviceInfo {
-  id: string;
-  name: string;
-  type: 'mobile' | 'tablet' | 'desktop';
-  category: 'small_phone' | 'normal_phone' | 'large_phone' | 'tablet' | 'desktop';
-  width: number;
-  height: number;
-  aspectRatio: number;
-  orientation: 'portrait' | 'landscape';
-  isBaseDevice: boolean; // Used as reference for scaling
-}
-
-export interface ResponsiveBreakpoints {
-  mobile: {
-    small: number;
-    normal: number;
-    large: number;
-  };
-  tablet: number;
-  desktop: number;
-}
+// src/plugin/core/DeviceDetector.ts - Updated with Shared Types
+import { DeviceInfo, ResponsiveBreakpoints } from '../../shared/types';
 
 export class DeviceDetector {
   private static readonly DEVICE_PATTERNS = {

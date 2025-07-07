@@ -1,48 +1,5 @@
-// ThemeGenerator.ts - Extract design system tokens from Figma
-
-import { DeviceInfo } from './DeviceDetector';
-
-export interface ColorToken {
-  name: string;
-  value: string;
-  usage: 'primary' | 'secondary' | 'accent' | 'neutral' | 'semantic';
-  variants?: {
-    50?: string;
-    100?: string;
-    200?: string;
-    300?: string;
-    400?: string;
-    500?: string;
-    600?: string;
-    700?: string;
-    800?: string;
-    900?: string;
-  };
-}
-
-export interface TypographyToken {
-  name: string;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: string;
-  lineHeight?: number;
-  letterSpacing?: number;
-  usage: 'heading' | 'body' | 'caption' | 'button' | 'label';
-}
-
-export interface SpacingToken {
-  name: string;
-  value: number;
-  usage: 'margin' | 'padding' | 'gap' | 'radius';
-}
-
-export interface ThemeTokens {
-  colors: ColorToken[];
-  typography: TypographyToken[];
-  spacing: SpacingToken[];
-  shadows: any[];
-  borderRadius: any[];
-}
+// src/plugin/core/ThemeGenerator.ts - Updated with Shared Types
+import { DeviceInfo, ColorToken, TypographyToken, SpacingToken, ThemeTokens } from '../../shared/types';
 
 export class ThemeGenerator {
   private static colorFrequency = new Map<string, number>();
@@ -336,11 +293,11 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
       .slice(0, 20); // Take top 20 colors
 
     for (let i = 0; i < sortedColors.length; i++) {
-      const [color, frequency] = sortedColors[i];
+      const [color] = sortedColors[i];
       tokens.push({
         name: this.generateColorName(color, i),
         value: color,
-        usage: this.determineColorUsage(color, i, frequency)
+        usage: this.determineColorUsage(color, i)
       });
     }
 
@@ -416,7 +373,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
   /**
    * Determine color usage category
    */
-  private static determineColorUsage(color: string, index: number, frequency: number): ColorToken['usage'] {
+  private static determineColorUsage(color: string, index: number): ColorToken['usage'] {
     if (index === 0) return 'primary';
     if (index === 1) return 'secondary';
     if (index === 2) return 'accent';

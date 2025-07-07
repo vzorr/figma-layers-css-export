@@ -1,4 +1,4 @@
-// src/ui/index.tsx - Corrected UI Entry Point
+// src/ui/index.tsx - Fixed UI Entry Point
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { PluginUI } from './components/PluginUI';

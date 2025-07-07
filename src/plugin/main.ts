@@ -1,4 +1,4 @@
-// src/plugin/main.ts - Corrected Plugin Entry Point
+// src/plugin/main.ts - Fixed Plugin Entry Point
 import { PluginManager } from './core/PluginManager';
 
 console.log('🚀 [Plugin] Figma to React Native Plugin starting...');
@@ -23,14 +23,7 @@ const handleError = (error: Error, context: string) => {
 let pluginManager: PluginManager | null = null;
 
 try {
-  // Show UI first
-  figma.showUI(__html__, { 
-    width: 480, 
-    height: 700,
-    themeColors: true 
-  });
-
-  // Initialize plugin manager
+  // Initialize plugin manager (it will handle UI creation internally)
   pluginManager = new PluginManager();
   
   console.log('✅ [Plugin] Plugin manager initialized');
@@ -52,14 +45,8 @@ figma.on('close', () => {
   }
 });
 
-// Global error handlers
-process.on('uncaughtException', (error) => {
-  handleError(error, 'Uncaught Exception');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  const error = reason instanceof Error ? reason : new Error(String(reason));
-  handleError(error, 'Unhandled Promise Rejection');
-});
+// Figma plugin environment error handlers (no Node.js process object)
+// Note: These are not available in Figma plugin environment
+// Instead, rely on try-catch blocks and the PluginManager's error handling
 
 console.log('✅ [Plugin] Main initialization complete');

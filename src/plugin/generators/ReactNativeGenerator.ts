@@ -1,40 +1,14 @@
-// src/plugin/generators/ReactNativeGenerator.ts - Complete Implementation
-import { LayerData } from '../types/FigmaTypes';
-import { DeviceInfo } from '../core/DeviceDetector';
-import { ThemeTokens } from '../core/ThemeGenerator';
+// src/plugin/generators/ReactNativeGenerator.ts - Updated with Shared Types
 import { 
-  LayerAnalyzer, 
-  ComponentPattern, 
-  LayoutAnalysis, 
-  VisualProperties, 
-  TextAnalysis 
-} from '../analyzers/LayerAnalyzer';
-
-export interface GenerationOptions {
-  useTypeScript: boolean;
-  useResponsive: boolean;
-  useThemeTokens: boolean;
-  componentType: 'screen' | 'component' | 'section';
-  includeNavigation: boolean;
-  outputFormat: 'single-file' | 'separate-styles';
-}
-
-export interface GenerationContext {
-  baseDevice: DeviceInfo;
-  themeTokens: ThemeTokens | null;
-  options: GenerationOptions;
-  componentName: string;
-  usedComponents: Set<string>;
-  imports: Set<string>;
-  hooks: Set<string>;
-  stateVariables: string[];
-}
-
-export interface GeneratedComponent {
-  code: string;
-  imports: string[];
-  dependencies: string[];
-}
+  LayerData,
+  DeviceInfo,
+  GenerationContext,
+  GeneratedComponent,
+  LayoutAnalysis,
+  ComponentPattern,
+  VisualProperties
+} from '../../shared/types';
+import { LayerAnalyzer } from '../analyzers/LayerAnalyzer';
 
 export class ReactNativeGenerator {
   
@@ -75,7 +49,6 @@ export class ReactNativeGenerator {
   private static generateJSX(layer: LayerData, context: GenerationContext, depth: number = 1): string {
     const pattern = LayerAnalyzer.detectComponentPattern(layer);
     const layout = LayerAnalyzer.analyzeLayout(layer);
-    const visual = LayerAnalyzer.extractVisualProperties(layer);
     
     console.log(`🎨 Processing ${layer.name} (${pattern.type}, confidence: ${pattern.confidence.toFixed(2)})`);
 
