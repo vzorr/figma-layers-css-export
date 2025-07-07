@@ -1,4 +1,4 @@
-// src/plugin/core/PluginManager.ts - Enhanced with Full Integration
+// src/plugin/core/PluginManager.ts - Fixed and Enhanced
 import { DeviceDetector, DeviceInfo } from './DeviceDetector';
 import { ThemeGenerator, ThemeTokens } from './ThemeGenerator';
 import { ReactNativeGenerator } from '../generators/ReactNativeGenerator';
@@ -19,6 +19,7 @@ interface PluginState {
   baseDevice: DeviceInfo | null;
   themeTokens: ThemeTokens | null;
   isAnalyzed: boolean;
+  currentLayers: LayerData[];
 }
 
 export class PluginManager {
@@ -26,7 +27,8 @@ export class PluginManager {
     devices: [],
     baseDevice: null,
     themeTokens: null,
-    isAnalyzed: false
+    isAnalyzed: false,
+    currentLayers: []
   };
 
   constructor() {
@@ -129,6 +131,10 @@ export class PluginManager {
         spacing: this.state.themeTokens.spacing.length
       });
       
+      // 4. Get current page layers
+      this.state.currentLayers = this.getCurrentPageLayers();
+      console.log(`📋 [PluginManager] Found ${this.state.currentLayers.length} screen layers`);
+      
       this.state.isAnalyzed = true;
       
     } catch (error) {
@@ -147,7 +153,7 @@ export class PluginManager {
         devices: this.state.devices,
         baseDevice: this.state.baseDevice,
         themeTokens: this.state.themeTokens,
-        layers: this.getCurrentPageLayers()
+        layers: this.state.currentLayers
       }
     });
   }
@@ -422,12 +428,11 @@ export class PluginManager {
   }
 
   /**
-   * Sanitize component name for React
+   * Sanitize component name for React - FIXED
    */
   private sanitizeComponentName(name: string): string {
     // Remove special characters and ensure it starts with a letter
-    const sanitized = name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component    if ('cornerRadius' in node) {
-      props.cornerRadius = node.cornerRadius;');
+    const sanitized = name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component');
     return sanitized || 'GeneratedComponent';
   }
 

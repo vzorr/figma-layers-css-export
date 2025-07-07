@@ -4,17 +4,27 @@
   "description": "Figma to React Native Plugin with Automatic Theme Generation",
   "main": "dist/code.js",
   "scripts": {
-    "build": "npm run clean && webpack --mode=production",
-    "dev": "npm run clean && webpack --mode=development --watch",
+    "build": "npm run clean && npm run build:plugin && npm run build:ui",
+    "build:plugin": "webpack --config webpack.config.js --env target=plugin --mode=production",
+    "build:ui": "webpack --config webpack.config.js --env target=ui --mode=production",
+    "dev": "npm run clean && npm run dev:plugin & npm run dev:ui",
+    "dev:plugin": "webpack --config webpack.config.js --env target=plugin --mode=development --watch",
+    "dev:ui": "webpack --config webpack.config.js --env target=ui --mode=development --watch",
     "clean": "rimraf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "type-check:plugin": "tsc --project tsconfig.plugin.json --noEmit",
+    "type-check:ui": "tsc --project tsconfig.ui.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "keywords": [
     "figma",
     "plugin",
     "react-native",
     "design-system",
-    "theme-generation"
+    "theme-generation",
+    "code-generation",
+    "responsive-design"
   ],
   "author": "Your Name",
   "license": "MIT",
@@ -23,17 +33,26 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@figma/plugin-typings": "^1.114.0",
+    "@figma/eslint-plugin-figma-plugins": "^0.15.0",
+    "@figma/plugin-typings": "^1.95.0",
+    "@types/node": "^20.19.4",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.6.0",
+    "mini-css-extract-plugin": "^2.7.6",
     "rimraf": "^5.0.5",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-merge": "^5.10.0"
   },
   "engines": {
     "node": ">=16.0.0"
