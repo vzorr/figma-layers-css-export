@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figma to React Native Converter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 70vh;
+        }
+
+        .input-section {
+            padding: 24px;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .output-section {
+            padding: 24px;
+            background: #f8fafc;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+
+        .json-input {
+            width: 100%;
+            height: 60%;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            resize: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .json-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .output-code {
+            width: 100%;
+            height: 60%;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            background: #1e293b;
+            color: #e2e8f0;
+            resize: none;
+        }
+
+        .options {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .option-group {
+            margin-bottom: 12px;
+        }
+
+        .option-group label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: block;
+            color: #374151;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            background: #10b981;
+            color: white;
+        }
+
+        .notification.error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .layer-info {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #0c4a6e;
+        }
+
+        .layer-info strong {
+            font-weight: 600;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .input-section {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .json-input, .output-code {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" id="backBtn">← Back to Layers</button>
+            <h1>🎨 Figma → React Native Converter</h1>
+            <p>Transform your Figma designs into responsive React Native screens</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="section-title">📋 Figma Layer JSON</div>
+                
+                <div class="options">
+                    <div class="option-group">
+                        <label>Screen Type</label>
+                        <select class="select" id="screenType">
+                            <option value="screen">Full Screen Component</option>
+                            <option value="component">Reusable Component</option>
+                            <option value="section">Section Component</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Responsive Features</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="useFlexbox" checked>
+                                <label for="useFlexbox">Flexbox Layout</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="useDimensions" checked>
+                                <label for="useDimensions">Screen Dimensions</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="useTypeScript" checked>
+                                <label for="useTypeScript">TypeScript</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Styling Approach</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="useStyleSheet" checked>
+                                <label for="useStyleSheet">StyleSheet</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="useResponsive" checked>
+                                <label for="useResponsive">Responsive Utils</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <textarea 
+                    id="jsonInput" 
+                    class="json-input" 
+                    placeholder="Figma layer JSON will be loaded automatically..."
+                    readonly
+                ></textarea>
+
+                <div class="layer-info" id="layerInfo">
+                    <strong>Selected Layer:</strong> <span id="layerName">Loading...</span>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="convertBtn">✨ Convert to React Native</button>
+                    <button class="btn btn-secondary" id="loadExampleBtn">📱 Load Example</button>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="section-title">⚛️ React Native Code</div>
+                
+                <textarea 
+                    id="outputCode" 
+                    class="output-code" 
+                    readonly
+                    placeholder="Generated React Native code will appear here..."
+                ></textarea>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="copyCodeBtn">📋 Copy Code</button>
+                    <button class="btn btn-secondary" id="downloadBtn">💾 Download File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FigmaToReactNativeConverter {
+            constructor() {
+                this.screenWidth = 375;
+                this.screenHeight = 812;
+                this.baseUnit = 8;
+            }
+
+            convert(figmaJson, options = {}) {
+                const {
+                    screenType = 'screen',
+                    useFlexbox = true,
+                    useDimensions = true,
+                    useTypeScript = true,
+                    useStyleSheet = true,
+                    useResponsive = true
+                } = options;
+
+                try {
+                    const parsedJson = typeof figmaJson === 'string' ? JSON.parse(figmaJson) : figmaJson;
+                    
+                    if (parsedJson.properties && parsedJson.properties.width) {
+                        this.screenWidth = parsedJson.properties.width;
+                        this.screenHeight = parsedJson.properties.height || 812;
+                    }
+
+                    const componentName = this.sanitizeComponentName(parsedJson.name || 'GeneratedComponent');
+                    const imports = this.generateImports(useDimensions, useTypeScript);
+                    const responsiveUtils = useResponsive ? this.generateResponsiveUtils() : '';
+                    const component = this.generateComponent(parsedJson, componentName, options);
+                    
+                    return `${imports}\n\n${responsiveUtils}${component}`;
+                } catch (error) {
+                    throw new Error(`Conversion failed: ${error.message}`);
+                }
+            }
+
+            generateImports(useDimensions, useTypeScript) {
+                let imports = `import React from 'react';\nimport {\n  View,\n  Text,\n  StyleSheet,\n  ScrollView,\n  TouchableOpacity,\n  Image`;
+                
+                if (useDimensions) {
+                    imports += `,\n  Dimensions`;
+                }
+                
+                imports += `\n} from 'react-native';`;
+
+                if (useTypeScript) {
+                    imports += `\nimport { FC } from 'react';`;
+                }
+
+                return imports;
+            }
+
+            generateResponsiveUtils() {
+                return `
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const scale = (size: number) => (SCREEN_WIDTH / ${this.screenWidth}) * size;
+const verticalScale = (size: number) => (SCREEN_HEIGHT / ${this.screenHeight}) * size;
+const moderateScale = (size: number, factor: number = 0.5) => 
+  size + (scale(size) - size) * factor;
+
+const wp = (percentage: number) => (SCREEN_WIDTH * percentage) / 100;
+const hp = (percentage: number) => (SCREEN_HEIGHT * percentage) / 100;
+
+`;
+            }
+
+            generateComponent(layer, componentName, options) {
+                const { useTypeScript, useStyleSheet } = options;
+                
+                const typeAnnotation = useTypeScript ? ': FC' : '';
+                const jsx = this.generateJSX(layer, options);
+                const styles = useStyleSheet ? this.generateStyles(layer, options) : '';
+
+                return `const ${componentName}${typeAnnotation} = () => {
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+${jsx}
+    </ScrollView>
+  );
+};
+
+${styles}
+
+export default ${componentName};`;
+            }
+
+            generateJSX(layer, options, depth = 1) {
+                const indent = '  '.repeat(depth);
+                
+                if (!layer.children || layer.children.length === 0) {
+                    return this.generateLeafElement(layer, indent, options);
+                }
+
+                const containerStyle = this.getContainerStyleName(layer);
+                let jsx = `${indent}<View style={styles.${containerStyle}}>\n`;
+
+                for (const child of layer.children) {
+                    jsx += this.generateJSX(child, options, depth + 1);
+                }
+
+                jsx += `${indent}</View>\n`;
+                return jsx;
+            }
+
+            generateLeafElement(layer, indent, options) {
+                const styleName = this.getStyleName(layer);
+                
+                switch (layer.type) {
+                    case 'TEXT':
+                        const text = layer.name || 'Sample Text';
+                        return `${indent}<Text style={styles.${styleName}}>${text}</Text>\n`;
+                    
+                    case 'RECTANGLE':
+                    case 'ELLIPSE':
+                        if (this.isButton(layer)) {
+                            return `${indent}<TouchableOpacity style={styles.${styleName}} onPress={() => console.log('${layer.name} pressed')}>
+${indent}  <Text style={styles.${styleName}Text}>${layer.name}</Text>
+${indent}</TouchableOpacity>\n`;
+                        }
+                        return `${indent}<View style={styles.${styleName}} />\n`;
+                    
+                    case 'IMAGE':
+                        return `${indent}<Image
+${indent}  source={{ uri: 'https://via.placeholder.com/${Math.round(layer.properties?.width || 100)}x${Math.round(layer.properties?.height || 100)}' }}
+${indent}  style={styles.${styleName}}
+${indent}  resizeMode="cover"
+${indent}/>\n`;
+                    
+                    default:
+                        return `${indent}<View style={styles.${styleName}} />\n`;
+                }
+            }
+
+            generateStyles(layer, options, styles = {}) {
+                const { useResponsive } = options;
+                
+                if (layer.id) {
+                    const styleName = layer.type === 'PAGE' ? 'container' : this.getStyleName(layer);
+                    styles[styleName] = this.getElementStyle(layer, useResponsive);
+                    
+                    if (layer.children && layer.children.length > 0) {
+                        const containerStyleName = this.getContainerStyleName(layer);
+                        styles[containerStyleName] = this.getContainerStyle(layer, useResponsive);
+                    }
+                    
+                    if (this.isButton(layer)) {
+                        styles[`${styleName}Text`] = this.getButtonTextStyle(layer, useResponsive);
+                    }
+                }
+
+                if (layer.children) {
+                    for (const child of layer.children) {
+                        this.generateStyles(child, options, styles);
+                    }
+                }
+
+                if (layer.type === 'PAGE' || layer.type === 'FRAME') {
+                    return `\nconst styles = StyleSheet.create(${JSON.stringify(styles, null, 2)});`;
+                }
+
+                return styles;
+            }
+
+            getElementStyle(layer, useResponsive) {
+                const props = layer.properties || {};
+                const style = {};
+
+                if (props.width) {
+                    style.width = useResponsive ? `scale(${props.width})` : props.width;
+                }
+                if (props.height) {
+                    style.height = useResponsive ? `verticalScale(${props.height})` : props.height;
+                }
+
+                switch (layer.type) {
+                    case 'TEXT':
+                        style.fontSize = useResponsive ? 'moderateScale(16)' : 16;
+                        style.color = '#000000';
+                        style.fontWeight = '400';
+                        break;
+                    
+                    case 'RECTANGLE':
+                        if (this.isButton(layer)) {
+                            style.backgroundColor = '#007AFF';
+                            style.borderRadius = useResponsive ? 'moderateScale(8)' : 8;
+                            style.paddingVertical = useResponsive ? 'verticalScale(12)' : 12;
+                            style.paddingHorizontal = useResponsive ? 'scale(24)' : 24;
+                            style.alignItems = 'center';
+                            style.justifyContent = 'center';
+                        } else {
+                            style.backgroundColor = '#F0F0F0';
+                            style.borderRadius = useResponsive ? 'moderateScale(4)' : 4;
+                        }
+                        break;
+                    
+                    case 'ELLIPSE':
+                        style.backgroundColor = '#F0F0F0';
+                        style.borderRadius = props.width ? (useResponsive ? `scale(${props.width / 2})` : props.width / 2) : 50;
+                        break;
+                    
+                    case 'IMAGE':
+                        style.borderRadius = useResponsive ? 'moderateScale(4)' : 4;
+                        break;
+                }
+
+                if (props.y && props.y > 0) {
+                    style.marginTop = useResponsive ? `verticalScale(${Math.min(props.y, 20)})` : Math.min(props.y, 20);
+                }
+
+                return style;
+            }
+
+            getContainerStyle(layer, useResponsive) {
+                const style = {
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                };
+
+                if (layer.children && layer.children.length > 1) {
+                    const isHorizontal = this.isHorizontalLayout(layer.children);
+                    if (isHorizontal) {
+                        style.flexDirection = 'row';
+                        style.alignItems = 'center';
+                        style.justifyContent = 'space-between';
+                    }
+                }
+
+                const padding = useResponsive ? 'scale(16)' : 16;
+                style.paddingHorizontal = padding;
+                style.paddingVertical = useResponsive ? 'verticalScale(8)' : 8;
+
+                return style;
+            }
+
+            getButtonTextStyle(layer, useResponsive) {
+                return {
+                    color: '#FFFFFF',
+                    fontSize: useResponsive ? 'moderateScale(16)' : 16,
+                    fontWeight: '600'
+                };
+            }
+
+            isButton(layer) {
+                const name = layer.name?.toLowerCase() || '';
+                return name.includes('button') || name.includes('btn') || 
+                       name.includes('cta') || name.includes('submit') ||
+                       (layer.type === 'RECTANGLE' && layer.children && 
+                        layer.children.some(child => child.type === 'TEXT'));
+            }
+
+            isHorizontalLayout(children) {
+                if (children.length < 2) return false;
+                
+                const avgY = children.reduce((sum, child) => sum + (child.properties?.y || 0), 0) / children.length;
+                const yVariance = children.reduce((sum, child) => sum + Math.pow((child.properties?.y || 0) - avgY, 2), 0) / children.length;
+                
+                return yVariance < 100;
+            }
+
+            getStyleName(layer) {
+                return this.sanitizeStyleName(layer.name || layer.type.toLowerCase() + layer.id?.substring(0, 4));
+            }
+
+            getContainerStyleName(layer) {
+                return this.getStyleName(layer) + 'Container';
+            }
+
+            sanitizeComponentName(name) {
+                return name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'Component$&');
+            }
+
+            sanitizeStyleName(name) {
+                return name.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d/, 'style$&').toLowerCase();
+            }
+        }
+
+        // Initialize converter
+        const converter = new FigmaToReactNativeConverter();
+        const jsonInput = document.getElementById('jsonInput');
+        const outputCode = document.getElementById('outputCode');
+        const convertBtn = document.getElementById('convertBtn');
+        const loadExampleBtn = document.getElementById('loadExampleBtn');
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const backBtn = document.getElementById('backBtn');
+        const layerName = document.getElementById('layerName');
+
+        // Load data from sessionStorage when page loads
+        function loadStoredData() {
+            const storedData = sessionStorage.getItem('figma-layer-data');
+            const storedName = sessionStorage.getItem('figma-layer-name');
+            
+            if (storedData) {
+                jsonInput.value = storedData;
+                layerName.textContent = storedName || 'Unnamed Layer';
+                
+                // Auto-convert after loading
+                setTimeout(() => {
+                    convertBtn.click();
+                }, 500);
+                
+                showNotification('📱 Layer data loaded from Figma plugin!');
+            } else {
+                layerName.textContent = 'No layer data found';
+                showNotification('No layer data found. Please go back and select a layer.', 'error');
+            }
+        }
+
+        // Back button functionality
+        backBtn.addEventListener('click', () => {
+            // Clear stored data
+            sessionStorage.removeItem('figma-layer-data');
+            sessionStorage.removeItem('figma-layer-name');
+            
+            // Navigate back to main plugin
+            window.location.href = 'ui.html';
+        });
+
+        function getOptions() {
+            return {
+                screenType: document.getElementById('screenType').value,
+                useFlexbox: document.getElementById('useFlexbox').checked,
+                useDimensions: document.getElementById('useDimensions').checked,
+                useTypeScript: document.getElementById('useTypeScript').checked,
+                useStyleSheet: document.getElementById('useStyleSheet').checked,
+                useResponsive: document.getElementById('useResponsive').checked
+            };
+        }
+
+        function showNotification(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `notification ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 3000);
+        }
+
+        convertBtn.addEventListener('click', () => {
+            const input = jsonInput.value.trim();
+            if (!input) {
+                showNotification('Please provide Figma JSON first', 'error');
+                return;
+            }
+
+            try {
+                const options = getOptions();
+                const code = converter.convert(input, options);
+                outputCode.value = code;
+                showNotification('🎉 Code generated successfully!');
+            } catch (error) {
+                showNotification(`Conversion error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        });
+
+        loadExampleBtn.addEventListener('click', () => {
+            const exampleJson = {
+                "id": "frame-1",
+                "name": "LoginScreen",
+                "type": "FRAME",
+                "visible": true,
+                "locked": false,
+                "properties": {
+                    "width": 375,
+                    "height": 812
+                },
+                "children": [
+                    {
+                        "id": "text-1",
+                        "name": "Welcome Back",
+                        "type": "TEXT",
+                        "visible": true,
+                        "locked": false,
+                        "properties": {
+                            "x": 32,
+                            "y": 100,
+                            "width": 311,
+                            "height": 40
+                        }
+                    },
+                    {
+                        "id": "button-1",
+                        "name": "Login Button",
+                        "type": "RECTANGLE",
+                        "visible": true,
+                        "locked": false,
+                        "properties": {
+                            "x": 32,
+                            "y": 300,
+                            "width": 311,
+                            "height": 48
+                        },
+                        "children": [
+                            {
+                                "id": "text-2",
+                                "name": "Login",
+                                "type": "TEXT",
+                                "visible": true,
+                                "locked": false,
+                                "properties": {
+                                    "x": 155,
+                                    "y": 14,
+                                    "width": 50,
+                                    "height": 20
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            jsonInput.value = JSON.stringify(exampleJson, null, 2);
+            showNotification('📱 Example loaded! Click Convert to see the result.');
+        });
+
+        copyCodeBtn.addEventListener('click', async () => {
+            if (!outputCode.value) {
+                showNotification('No code to copy. Generate code first.', 'error');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(outputCode.value);
+                showNotification('📋 Code copied to clipboard!');
+            } catch (error) {
+                showNotification('Failed to copy code', 'error');
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!outputCode.value) {
+                showNotification('No code to download. Generate code first.', 'error');
+                return;
+            }
+
+            const options = getOptions();
+            const filename = `GeneratedComponent.${options.useTypeScript ? 'tsx' : 'js'}`;
+            const blob = new Blob([outputCode.value], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`💾 ${filename} downloaded!`);
+        });
+
+        // Listen for messages from parent window (plugin)
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'load-json') {
+                jsonInput.value = event.data.data;
+                // Auto-trigger conversion after a short delay
+                setTimeout(() => {
+                    convertBtn.click();
+                }, 500);
+                showNotification('📱 JSON loaded from Figma plugin!');
+            }
+        });
+
+        // Load stored data on page load
+        window.addEventListener('load', () => {
+            loadStoredData();
+        });
+
+        // Auto-focus on JSON input if no data is loaded
+        setTimeout(() => {
+            if (!jsonInput.value) {
+                jsonInput.focus();
+            }
+        }, 100);
+    </script>
+</body>
+</html>
