@@ -1,44 +1,68 @@
 {
-  "name": "layers-to-css-generator",
+  "name": "figma-to-rn-plugin",
   "version": "1.0.0",
-  "description": "Your Figma Plugin",
-  "main": "code.js",
+  "description": "Figma to React Native Plugin with Design System Extraction",
+  "main": "dist/code.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
-    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix .",
-    "watch": "npm run build -- --watch"
+    "build": "node scripts/build.js",
+    "build:plugin": "webpack --config config/webpack.plugin.js",
+    "build:ui": "webpack --config config/webpack.ui.js",
+    "dev": "node scripts/dev.js",
+    "dev:plugin": "webpack --config config/webpack.plugin.js --watch",
+    "dev:ui": "webpack serve --config config/webpack.ui.js",
+    "clean": "node scripts/clean.js",
+    "lint": "eslint src/**/*.{ts,tsx} --max-warnings 0",
+    "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
+    "type-check": "tsc --noEmit",
+    "type-check:plugin": "tsc --project tsconfig.plugin.json --noEmit",
+    "type-check:ui": "tsc --project tsconfig.ui.json --noEmit",
+    "test": "echo \"No tests specified\" && exit 0",
+    "prepare": "npm run build"
   },
-  "author": "",
-  "license": "",
+  "keywords": [
+    "figma",
+    "plugin",
+    "react-native",
+    "design-system",
+    "code-generation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
-    "@figma/eslint-plugin-figma-plugins": "*",
+    "@figma/eslint-plugin-figma-plugins": "^0.15.2",
     "@figma/plugin-typings": "^1.114.0",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "eslint": "^8.54.0",
-    "typescript": "^5.3.2"
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "html-webpack-plugin": "^5.6.0",
+    "mini-css-extract-plugin": "^2.7.6",
+    "rimraf": "^5.0.5",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "webpack-merge": "^5.10.0"
   },
-  "eslintConfig": {
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:@figma/figma-plugins/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "root": true,
-    "rules": {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_",
-          "caughtErrorsIgnorePattern": "^_"
-        }
-      ]
-    }
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "figma": {
+    "id": "figma-to-rn-plugin",
+    "name": "Figma to React Native",
+    "api": "1.0.0",
+    "main": "dist/code.js",
+    "ui": "dist/ui.html"
   }
 }

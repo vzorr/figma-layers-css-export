@@ -1,23 +1,89 @@
+// tsconfig.json - Base TypeScript configuration
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["ES6"],
-    "strict": true,
-    "esModuleInterop": false,
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowJs": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@plugin/*": ["src/plugin/*"],
+      "@ui/*": ["src/ui/*"],
+      "@shared/*": ["src/shared/*"]
+    },
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@figma"
     ]
   },
   "include": [
-    "code.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "**/*.js"
+    "dist",
+    "build",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}
+
+// tsconfig.plugin.json - Plugin-specific configuration
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["ES2017"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "noEmit": false,
+    "outDir": "./build/plugin",
+    "rootDir": "./src/plugin"
+  },
+  "include": [
+    "src/plugin/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": [
+    "src/ui/**/*",
+    "node_modules",
+    "dist"
+  ]
+}
+
+// tsconfig.ui.json - UI-specific configuration  
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "noEmit": false,
+    "outDir": "./build/ui",
+    "rootDir": "./src/ui"
+  },
+  "include": [
+    "src/ui/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": [
+    "src/plugin/**/*",
+    "node_modules",
+    "dist"
   ]
 }

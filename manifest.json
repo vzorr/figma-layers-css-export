@@ -1,21 +1,22 @@
 {
-  "name": "Layers to CSS Generator",
-  "id": "1523759936297065466",
+  "name": "Figma to React Native",
+  "id": "figma-to-react-native-theme-generator",
   "api": "1.0.0",
-  "main": "code.js",
-  "capabilities": [
-    "inspect"
-  ],
+  "main": "dist/plugin.js",
+  "ui": "dist/ui.html",
+  "capabilities": [],
   "enableProposedApi": false,
-  "documentAccess": "dynamic-page",
   "editorType": [
-    "figma",
-    "dev"
+    "figma"
   ],
-  "ui": "ui.html",
   "networkAccess": {
-    "allowedDomains": [
-      "none"
-    ]
-  }
+    "allowedDomains": ["none"]
+  },
+  "permissions": [],
+  "relaunchButtons": [
+    {
+      "command": "open",
+      "name": "Open Theme Generator"
+    }
+  ]
 }
