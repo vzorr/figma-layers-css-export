@@ -1,59 +1,39 @@
 {
   "name": "figma-to-rn-plugin",
-  "version": "1.0.0",
-  "description": "Figma to React Native Plugin with Design System Extraction",
+  "version": "2.0.0",
+  "description": "Figma to React Native Plugin with Automatic Theme Generation",
   "main": "dist/code.js",
   "scripts": {
-    "build": "node scripts/build.js",
-    "build:plugin": "webpack --config config/webpack.plugin.js",
-    "build:ui": "webpack --config config/webpack.ui.js",
-    "dev": "node scripts/dev.js",
-    "dev:plugin": "webpack --config config/webpack.plugin.js --watch",
-    "dev:ui": "webpack serve --config config/webpack.ui.js",
-    "clean": "node scripts/clean.js",
-    "lint": "eslint src/**/*.{ts,tsx} --max-warnings 0",
-    "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
-    "type-check": "tsc --noEmit",
-    "type-check:plugin": "tsc --project tsconfig.plugin.json --noEmit",
-    "type-check:ui": "tsc --project tsconfig.ui.json --noEmit",
-    "test": "echo \"No tests specified\" && exit 0",
-    "prepare": "npm run build"
+    "build": "npm run clean && webpack --mode=production",
+    "dev": "npm run clean && webpack --mode=development --watch",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "figma",
     "plugin",
     "react-native",
     "design-system",
-    "code-generation"
+    "theme-generation"
   ],
   "author": "Your Name",
   "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "@figma/eslint-plugin-figma-plugins": "^0.15.2",
     "@figma/plugin-typings": "^1.114.0",
-    "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
-    "eslint": "^8.55.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.6.0",
-    "mini-css-extract-plugin": "^2.7.6",
     "rimraf": "^5.0.5",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1",
-    "webpack-merge": "^5.10.0"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "webpack-cli": "^5.1.4"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -61,7 +41,6 @@
   "figma": {
     "id": "figma-to-rn-plugin",
     "name": "Figma to React Native",
-    "api": "1.0.0",
     "main": "dist/code.js",
     "ui": "dist/ui.html"
   }
