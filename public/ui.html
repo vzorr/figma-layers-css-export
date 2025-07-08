@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Figma to React Native Plugin</title>
+  <style>
+    /* Prevent flash of unstyled content */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--figma-color-bg, #fff);
+      color: var(--figma-color-text, #000);
+      overflow: hidden;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+    
+    html, body, #root {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Loading state */
+    .initial-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 16px;
+      color: var(--figma-color-text-secondary, #666);
+    }
+    
+    .initial-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--figma-color-border, #e0e0e0);
+      border-top: 2px solid var(--figma-color-bg-brand, #007aff);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Error fallback */
+    .init-error {
+      display: none;
+      padding: 20px;
+      text-align: center;
+      color: #ff5555;
+      background: #ffe0e0;
+      border-radius: 6px;
+      margin: 20px;
+    }
+    
+    .init-error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="initial-loading">
+      <div class="initial-spinner"></div>
+      <div>Loading Figma to React Native Plugin...</div>
+      <small>Initializing design system analyzer...</small>
+    </div>
+    <div id="init-error" class="init-error">
+      <h3>Failed to load plugin</h3>
+      <p>Please try refreshing or contact support if the issue persists.</p>
+    </div>
+  </div>
+
+  <script>
+    // Fallback error handling for initialization
+    setTimeout(() => {
+      const loadingEl = document.querySelector('.initial-loading');
+      const errorEl = document.getElementById('init-error');
+      
+      if (loadingEl && loadingEl.style.display !== 'none') {
+        console.warn('Plugin took longer than expected to load');
+        if (errorEl) {
+          loadingEl.style.display = 'none';
+          errorEl.classList.add('show');
+        }
+      }
+    }, 10000); // 10 second timeout
+  </script>
+</body>
+</html>

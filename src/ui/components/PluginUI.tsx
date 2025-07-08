@@ -77,7 +77,8 @@ export const PluginUI: React.FC = () => {
     }
   });
 
-  const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // FIXED: Use correct timeout type for browser environment
+  const messageTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
 
@@ -164,7 +165,7 @@ export const PluginUI: React.FC = () => {
         break;
 
       case 'analysis-progress':
-        handleAnalysisProgress((message as any).data);
+        handleAnalysisProgress(message.data);
         break;
 
       case 'error':
@@ -172,7 +173,8 @@ export const PluginUI: React.FC = () => {
         break;
 
       default:
-        console.warn(`⚠️ [PluginUI] Unknown message type: ${message.type}`);
+        // FIXED: Type narrowing - use type assertion for unknown message types
+        console.warn(`⚠️ [PluginUI] Unknown message type: ${(message as any).type}`);
     }
   }, [uiState.connectionStatus]);
 
@@ -272,9 +274,9 @@ export const PluginUI: React.FC = () => {
   const sendMessageWithTimeout = useCallback((message: UIToPluginMessage, timeout: number = 5000) => {
     sendMessage(message);
     
-    // Set up timeout for critical messages
+    // Set up timeout for critical messages - FIXED: Use window.setTimeout
     if (['ui-ready', 'get-layers', 'generate-react-native'].includes(message.type)) {
-      messageTimeoutRef.current = setTimeout(() => {
+      messageTimeoutRef.current = window.setTimeout(() => {
         console.warn(`Message ${message.type} timed out`);
         if (message.type === 'ui-ready') {
           handleError('Plugin initialization timed out. Please try refreshing.');

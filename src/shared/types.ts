@@ -349,6 +349,15 @@ export interface ErrorMessage extends BaseMessage {
   message: string;
 }
 
+// FIXED: Added missing analysis progress message type
+export interface AnalysisProgressMessage extends BaseMessage {
+  type: 'analysis-progress';
+  data: {
+    step: string;
+    progress: number;
+  };
+}
+
 // Messages from UI to Plugin
 export interface UIReadyMessage extends BaseMessage {
   type: 'ui-ready';
@@ -381,13 +390,14 @@ export interface CloseMessage extends BaseMessage {
   type: 'close';
 }
 
-// Union types for message handling
+// Union types for message handling - FIXED: Added AnalysisProgressMessage
 export type PluginToUIMessage = 
   | DesignSystemAnalyzedMessage
   | LayersDataMessage
   | ThemeFileGeneratedMessage
   | ReactNativeGeneratedMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | AnalysisProgressMessage;
 
 export type UIToPluginMessage = 
   | UIReadyMessage
