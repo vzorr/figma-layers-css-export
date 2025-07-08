@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = false;
 
 console.log(`🏗️  Building Figma Plugin (${isProduction ? 'production' : 'development'})...`);
 

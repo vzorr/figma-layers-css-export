@@ -1,23 +1,25 @@
-// src/plugin/main.ts - Working Plugin Entry Point
-declare const figma: any;
+// src/plugin/main.ts - SIMPLIFIED Plugin Entry Point
+
+// Just reference Figma types - they're automatically available!
+/// <reference types="@figma/plugin-typings" />
 
 import { PluginManager } from './core/PluginManager';
 
 console.log('🚀 [Plugin] Figma to React Native Plugin starting...');
 
-// Ensure figma API is available
+// Validate Figma environment
 if (typeof figma === 'undefined') {
   console.error('❌ [Plugin] Figma API not available');
   throw new Error('Figma API not available - this code must run in a Figma plugin environment');
 }
 
 // Global error handler
-const handleError = (error: Error, context: string) => {
+const handleError = (error: Error, context: string): void => {
   console.error(`❌ [Plugin] Error in ${context}:`, error);
   
-  // Send error to UI if it's available
+  // Send error to UI if available
   try {
-    if (figma && figma.ui && figma.ui.postMessage) {
+    if (figma?.ui?.postMessage) {
       figma.ui.postMessage({
         type: 'error',
         message: `${context}: ${error.message}`
@@ -33,7 +35,7 @@ const handleError = (error: Error, context: string) => {
 let pluginManager: PluginManager | null = null;
 
 try {
-  // Initialize plugin manager (it will handle UI creation internally)
+  // Initialize plugin manager
   pluginManager = new PluginManager();
   
   console.log('✅ [Plugin] Plugin manager initialized');
@@ -57,13 +59,13 @@ try {
 }
 
 // Handle plugin close
-if (figma && figma.on) {
+if (figma?.on) {
   figma.on('close', () => {
     console.log('🔄 [Plugin] Plugin closing...');
     
     try {
-      if (pluginManager && typeof pluginManager.cleanup === 'function') {
-        pluginManager.cleanup();
+      if (pluginManager && typeof (pluginManager as any).cleanup === 'function') {
+        (pluginManager as any).cleanup();
       }
     } catch (error) {
       console.error('Error during cleanup:', error);

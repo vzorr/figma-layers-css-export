@@ -1,4 +1,9 @@
 // src/plugin/core/ThemeGenerator.ts - Fixed TypeScript Issues
+
+// Import Figma types first
+/// <reference types="@figma/plugin-typings" />
+
+
 import { DeviceInfo, ColorToken, TypographyToken, SpacingToken, ThemeTokens } from '../../shared/types';
 
 export class ThemeGenerator {
@@ -17,24 +22,36 @@ export class ThemeGenerator {
     this.fontFrequency.clear();
     this.spacingFrequency.clear();
 
-    // Analyze all pages
-    for (const page of figma.root.children) {
-      if (page.type === 'PAGE') {
-        this.analyzePage(page);
+    try {
+      // Analyze all pages
+      for (const page of figma.root.children) {
+        if (page.type === 'PAGE') {
+          this.analyzePage(page as PageNode);
+        }
       }
+
+      // Extract tokens from frequency data
+      const tokens: ThemeTokens = {
+        colors: this.extractColorTokens(),
+        typography: this.extractTypographyTokens(),
+        spacing: this.extractSpacingTokens(),
+        shadows: this.extractShadowTokens(),
+        borderRadius: this.extractBorderRadiusTokens()
+      };
+
+      console.log("✅ Design system analysis complete", tokens);
+      return tokens;
+    } catch (error) {
+      console.error("❌ Error analyzing design system:", error);
+      // Return empty tokens as fallback
+      return {
+        colors: [],
+        typography: [],
+        spacing: [],
+        shadows: [],
+        borderRadius: []
+      };
     }
-
-    // Extract tokens from frequency data
-    const tokens: ThemeTokens = {
-      colors: this.extractColorTokens(),
-      typography: this.extractTypographyTokens(),
-      spacing: this.extractSpacingTokens(),
-      shadows: this.extractShadowTokens(),
-      borderRadius: this.extractBorderRadiusTokens()
-    };
-
-    console.log("✅ Design system analysis complete", tokens);
-    return tokens;
   }
 
   /**
@@ -144,44 +161,52 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
   /**
    * Analyze a single page for design tokens
    */
-  private static analyzePage(page: PageNode) {
-    for (const child of page.children) {
-      this.analyzeNode(child);
+  private static analyzePage(page: PageNode): void {
+    try {
+      for (const child of page.children) {
+        this.analyzeNode(child as SceneNode);
+      }
+    } catch (error) {
+      console.warn("Error analyzing page:", error);
     }
   }
 
   /**
    * Recursively analyze nodes for design tokens
    */
-  private static analyzeNode(node: SceneNode) {
-    // Extract colors
-    this.extractColorsFromNode(node);
-    
-    // Extract typography
-    if (node.type === 'TEXT') {
-      this.extractTypographyFromNode(node);
-    }
-    
-    // Extract spacing
-    this.extractSpacingFromNode(node);
-
-    // Recurse into children
-    if ('children' in node && node.children) {
-      for (const child of node.children) {
-        this.analyzeNode(child);
+  private static analyzeNode(node: SceneNode): void {
+    try {
+      // Extract colors
+      this.extractColorsFromNode(node);
+      
+      // Extract typography
+      if (node.type === 'TEXT') {
+        this.extractTypographyFromNode(node as TextNode);
       }
+      
+      // Extract spacing
+      this.extractSpacingFromNode(node);
+
+      // Recurse into children
+      if ('children' in node && node.children) {
+        for (const child of node.children) {
+          this.analyzeNode(child as SceneNode);
+        }
+      }
+    } catch (error) {
+      console.warn(`Error analyzing node ${node.name}:`, error);
     }
   }
 
   /**
    * Extract colors from a node
    */
-  private static extractColorsFromNode(node: SceneNode) {
+  private static extractColorsFromNode(node: SceneNode): void {
     try {
       // Fill colors
       if ('fills' in node && node.fills && Array.isArray(node.fills)) {
         for (const fill of node.fills) {
-          if (fill.type === 'SOLID' && 'color' in fill) {
+          if (fill.type === 'SOLID' && 'color' in fill && fill.color) {
             const color = this.rgbToHex(fill.color);
             this.colorFrequency.set(color, (this.colorFrequency.get(color) || 0) + 1);
           }
@@ -191,7 +216,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
       // Stroke colors
       if ('strokes' in node && node.strokes && Array.isArray(node.strokes)) {
         for (const stroke of node.strokes) {
-          if (stroke.type === 'SOLID' && 'color' in stroke) {
+          if (stroke.type === 'SOLID' && 'color' in stroke && stroke.color) {
             const color = this.rgbToHex(stroke.color);
             this.colorFrequency.set(color, (this.colorFrequency.get(color) || 0) + 1);
           }
@@ -205,7 +230,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
   /**
    * Extract typography from text nodes
    */
-  private static extractTypographyFromNode(node: TextNode) {
+  private static extractTypographyFromNode(node: TextNode): void {
     try {
       const fontSize = (typeof node.fontSize === 'number' ? node.fontSize : undefined) || 16;
       const fontFamily = (node.fontName && typeof node.fontName === 'object' && 'family' in node.fontName) ? node.fontName.family : 'Inter';
@@ -232,7 +257,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
   /**
    * Extract spacing patterns from layout
    */
-  private static extractSpacingFromNode(node: SceneNode) {
+  private static extractSpacingFromNode(node: SceneNode): void {
     try {
       // Auto-layout spacing
       if ('layoutMode' in node && node.layoutMode !== 'NONE') {
@@ -258,10 +283,15 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
    * Convert RGB to hex
    */
   private static rgbToHex(rgb: RGB): string {
-    const r = Math.round(rgb.r * 255);
-    const g = Math.round(rgb.g * 255);
-    const b = Math.round(rgb.b * 255);
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+    try {
+      const r = Math.round(rgb.r * 255);
+      const g = Math.round(rgb.g * 255);
+      const b = Math.round(rgb.b * 255);
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+    } catch (error) {
+      console.warn("Error converting RGB to hex:", error);
+      return '#000000';
+    }
   }
 
   /**
@@ -349,9 +379,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
     return tokens;
   }
 
-  /**
-   * Generate semantic color names
-   */
+  // Helper methods for token generation
   private static generateColorName(color: string, index: number): string {
     // Simple color naming based on hue
     const hex = color.replace('#', '');
@@ -370,9 +398,6 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
     return `color${index + 1}`;
   }
 
-  /**
-   * Determine color usage category
-   */
   private static determineColorUsage(color: string, index: number): ColorToken['usage'] {
     if (index === 0) return 'primary';
     if (index === 1) return 'secondary';
@@ -381,9 +406,6 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
     return 'semantic';
   }
 
-  /**
-   * Generate other required methods for typography, spacing, etc.
-   */
   private static generateTypographyName(font: { family: string; size: number; weight: string; count: number }, index: number): string {
     if (font.size >= 24) return `heading${index + 1}`;
     if (font.size >= 16) return `body${index + 1}`;
@@ -524,12 +546,12 @@ const getBreakpointFontSize = (baseFontSize: number): number => {
 const normalize = getResponsiveFontSize;`;
   }
 
-  private static extractShadowTokens(): unknown[] {
+  private static extractShadowTokens(): any[] {
     // Placeholder for shadow extraction
     return [];
   }
 
-  private static extractBorderRadiusTokens(): unknown[] {
+  private static extractBorderRadiusTokens(): any[] {
     // Placeholder for border radius extraction
     return [];
   }

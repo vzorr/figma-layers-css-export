@@ -1,4 +1,4 @@
-// .eslintrc.js - ESLint configuration
+// .eslintrc.js - Corrected ESLint configuration
 module.exports = {
   root: true,
   env: {
@@ -8,7 +8,7 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
+    '@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
   ],
@@ -38,6 +38,7 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-non-null-assertion': 'warn',
+    '@typescript-eslint/no-var-requires': 'off', // Allow require() globally for now
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
     'no-console': 'off',
@@ -65,7 +66,7 @@ module.exports = {
       },
     },
     {
-      files: ['scripts/**/*'],
+      files: ['scripts/**/*', '*.config.js'],
       env: {
         node: true,
         browser: false,

@@ -1,126 +1,12 @@
-// src/shared/types.ts - Complete type definitions for the plugin
+// src/shared/types.ts - SIMPLIFIED version (no figma.d.ts needed!)
 
 // ============================================================================
-// FIGMA GLOBAL DECLARATIONS
+// PLUGIN-SPECIFIC TYPES ONLY
 // ============================================================================
+// Note: Figma types are provided by @figma/plugin-typings automatically
+// We don't need to redeclare or import them!
 
-declare global {
-  const figma: any;
-  const __html__: string;
-}
-
-// ============================================================================
-// FIGMA NODE TYPES
-// ============================================================================
-
-export interface FrameNode {
-  id: string;
-  name: string;
-  type: string;
-  width: number;
-  height: number;
-  children: any[];
-  [key: string]: any;
-}
-
-export interface SceneNode {
-  id: string;
-  name: string;
-  type: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  visible: boolean;
-  locked: boolean;
-  children?: any[];
-  fills?: any[];
-  strokes?: any[];
-  effects?: any[];
-  [key: string]: any;
-}
-
-export interface TextNode extends SceneNode {
-  characters: string;
-  fontSize?: number;
-  fontName?: any;
-  [key: string]: any;
-}
-
-export interface PageNode {
-  children: any[];
-  [key: string]: any;
-}
-
-// ============================================================================
-// FIGMA-COMPATIBLE TYPE DEFINITIONS
-// ============================================================================
-
-// Basic color types that match Figma's runtime
-export interface RGB {
-  r: number;
-  g: number;
-  b: number;
-}
-
-export interface RGBA extends RGB {
-  a: number;
-}
-
-// Simple Paint interface that matches what we actually use
-export interface Paint {
-  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND' | 'IMAGE' | 'EMOJI' | 'VIDEO';
-  color?: RGB;
-  opacity?: number;
-  visible?: boolean;
-  blendMode?: string;
-  [key: string]: any; // Allow additional properties
-}
-
-// Simple Effect interface
-export interface Effect {
-  type: 'INNER_SHADOW' | 'DROP_SHADOW' | 'LAYER_BLUR' | 'BACKGROUND_BLUR';
-  color?: RGBA;
-  offset?: { x: number; y: number };
-  radius: number;
-  spread?: number;
-  visible?: boolean;
-  blendMode?: string;
-  [key: string]: any; // Allow additional properties
-}
-
-// Shadow effect types
-export interface DropShadowEffect extends Effect {
-  type: 'DROP_SHADOW';
-}
-
-export interface InnerShadowEffect extends Effect {
-  type: 'INNER_SHADOW';
-}
-
-// Simple font interfaces
-export interface FontName {
-  family: string;
-  style: string;
-  [key: string]: any; // Allow additional properties
-}
-
-export interface LineHeight {
-  unit: 'AUTO' | 'PIXELS' | 'PERCENT';
-  value?: number;
-  [key: string]: any; // Allow additional properties
-}
-
-export interface LetterSpacing {
-  unit: 'PIXELS' | 'PERCENT';
-  value: number;
-  [key: string]: any; // Allow additional properties
-}
-
-// ============================================================================
-// DEVICE DETECTION TYPES
-// ============================================================================
-
+// Device Detection Types
 export interface DeviceInfo {
   id: string;
   name: string;
@@ -143,26 +29,12 @@ export interface ResponsiveBreakpoints {
   desktop: number;
 }
 
-// ============================================================================
-// THEME SYSTEM TYPES
-// ============================================================================
-
+// Theme System Types
 export interface ColorToken {
   name: string;
   value: string;
   usage: 'primary' | 'secondary' | 'accent' | 'neutral' | 'semantic';
-  variants?: {
-    50?: string;
-    100?: string;
-    200?: string;
-    300?: string;
-    400?: string;
-    500?: string;
-    600?: string;
-    700?: string;
-    800?: string;
-    900?: string;
-  };
+  variants?: Record<string, string>;
 }
 
 export interface TypographyToken {
@@ -185,14 +57,11 @@ export interface ThemeTokens {
   colors: ColorToken[];
   typography: TypographyToken[];
   spacing: SpacingToken[];
-  shadows: unknown[];
-  borderRadius: unknown[];
+  shadows: any[];
+  borderRadius: any[];
 }
 
-// ============================================================================
-// LAYER ANALYSIS TYPES
-// ============================================================================
-
+// Layer Analysis Types
 export interface EdgeInsets {
   top: number;
   right: number;
@@ -214,7 +83,7 @@ export interface LayoutAnalysis {
 export interface ComponentPattern {
   type: 'button' | 'input' | 'card' | 'list-item' | 'header' | 'navigation' | 'image' | 'text' | 'container' | 'custom';
   confidence: number;
-  properties: Record<string, unknown>;
+  properties: Record<string, any>;
   interactionType?: 'touchable' | 'scrollable' | 'static';
   hasText?: boolean;
   hasImage?: boolean;
@@ -236,17 +105,7 @@ export interface ShadowProperties {
   shadowOffset: { width: number; height: number };
   shadowOpacity: number;
   shadowRadius: number;
-  elevation?: number; // Android
-}
-
-export interface HierarchyAnalysis {
-  depth: number;
-  parentType?: string;
-  childrenCount: number;
-  isLeaf: boolean;
-  isContainer: boolean;
-  position: 'relative' | 'absolute';
-  zIndex?: number;
+  elevation?: number;
 }
 
 export interface TextAnalysis {
@@ -272,10 +131,7 @@ export interface ResponsiveAnalysis {
   aspectRatio?: number;
 }
 
-// ============================================================================
-// LAYER DATA TYPES (Using Figma's built-in types where possible)
-// ============================================================================
-
+// Layer Data Types (Compatible with Figma API but don't conflict)
 export interface NodeProperties {
   x?: number;
   y?: number;
@@ -292,23 +148,23 @@ export interface NodeProperties {
   primaryAxisAlignItems?: string;
   counterAxisAlignItems?: string;
   
-  // Visual properties - now using our compatible types
-  fills?: readonly Paint[];
-  strokes?: readonly Paint[];
+  // Visual properties - use any to avoid conflicts with Figma types
+  fills?: any[];
+  strokes?: any[];
   strokeWeight?: number;
   cornerRadius?: number;
-  effects?: readonly Effect[];
+  effects?: any[];
   opacity?: number;
   rotation?: number;
   
-  // Text properties - using our compatible types
+  // Text properties - use any to avoid conflicts
   fontSize?: number;
-  fontName?: FontName;
+  fontName?: any;
   textAlignHorizontal?: string;
   textAlignVertical?: string;
   characters?: string;
-  lineHeight?: LineHeight;
-  letterSpacing?: LetterSpacing;
+  lineHeight?: any;
+  letterSpacing?: any;
 }
 
 export interface LayerData {
@@ -328,10 +184,7 @@ export interface LayerData {
   textAnalysis?: TextAnalysis;
 }
 
-// ============================================================================
-// GENERATION OPTIONS
-// ============================================================================
-
+// Generation Options
 export interface GenerationOptions {
   useTypeScript: boolean;
   useResponsive: boolean;
@@ -358,10 +211,7 @@ export interface GeneratedComponent {
   dependencies: string[];
 }
 
-// ============================================================================
-// PLUGIN-UI COMMUNICATION TYPES
-// ============================================================================
-
+// Plugin-UI Communication Types
 export interface BaseMessage {
   type: string;
   id?: string;
@@ -456,10 +306,7 @@ export type UIToPluginMessage =
   | ReanalyzeDesignSystemMessage
   | CloseMessage;
 
-// ============================================================================
-// UTILITY TYPES
-// ============================================================================
-
+// Utility Types
 export interface PluginState {
   devices: DeviceInfo[];
   baseDevice: DeviceInfo | null;

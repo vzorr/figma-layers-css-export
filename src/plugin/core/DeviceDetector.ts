@@ -1,4 +1,9 @@
-// src/plugin/core/DeviceDetector.ts - Updated with Shared Types
+// src/plugin/core/DeviceDetector.ts - Fixed with Proper Types
+
+// Import Figma types first
+/// <reference types="@figma/plugin-typings" />
+
+
 import { DeviceInfo, ResponsiveBreakpoints } from '../../shared/types';
 
 export class DeviceDetector {
@@ -35,26 +40,31 @@ export class DeviceDetector {
     const devices: DeviceInfo[] = [];
     const seenDimensions = new Set<string>();
 
-    // Scan all pages
-    for (const page of figma.root.children) {
-      if (page.type === 'PAGE') {
-        // Look for top-level frames that represent screens
-        for (const child of page.children) {
-          if (child.type === 'FRAME' && this.isScreenFrame(child)) {
-            const deviceInfo = this.detectDeviceFromFrame(child);
-            const dimensionKey = `${deviceInfo.width}x${deviceInfo.height}`;
-            
-            // Avoid duplicates
-            if (!seenDimensions.has(dimensionKey)) {
-              devices.push(deviceInfo);
-              seenDimensions.add(dimensionKey);
+    try {
+      // Scan all pages
+      for (const page of figma.root.children) {
+        if (page.type === 'PAGE') {
+          // Look for top-level frames that represent screens
+          for (const child of page.children) {
+            if (child.type === 'FRAME' && this.isScreenFrame(child as FrameNode)) {
+              const deviceInfo = this.detectDeviceFromFrame(child as FrameNode);
+              const dimensionKey = `${deviceInfo.width}x${deviceInfo.height}`;
+              
+              // Avoid duplicates
+              if (!seenDimensions.has(dimensionKey)) {
+                devices.push(deviceInfo);
+                seenDimensions.add(dimensionKey);
+              }
             }
           }
         }
       }
-    }
 
-    return this.categorizeAndSortDevices(devices);
+      return this.categorizeAndSortDevices(devices);
+    } catch (error) {
+      console.error('Error scanning document for devices:', error);
+      return [];
+    }
   }
 
   /**
@@ -155,31 +165,30 @@ export class DeviceDetector {
    * Check if frame represents a screen (not a component)
    */
   private static isScreenFrame(frame: FrameNode): boolean {
-    // Heuristics to identify screen frames:
-    // 1. Has device-like dimensions
-    // 2. Not nested too deep
-    // 3. Contains multiple UI elements
-    // 4. Named like a screen
+    try {
+      const width = frame.width;
+      const height = frame.height;
+      const name = frame.name.toLowerCase();
 
-    const width = frame.width;
-    const height = frame.height;
-    const name = frame.name.toLowerCase();
+      // Check if dimensions match common device sizes
+      const hasDeviceDimensions = this.matchKnownDevice(width, height) !== null;
 
-    // Check if dimensions match common device sizes
-    const hasDeviceDimensions = this.matchKnownDevice(width, height) !== null;
+      // Check if it's reasonably sized for a screen
+      const minDimension = Math.min(width, height);
+      const maxDimension = Math.max(width, height);
+      const isReasonableSize = minDimension >= 300 && maxDimension >= 600 && maxDimension <= 2000;
 
-    // Check if it's reasonably sized for a screen
-    const minDimension = Math.min(width, height);
-    const maxDimension = Math.max(width, height);
-    const isReasonableSize = minDimension >= 300 && maxDimension >= 600 && maxDimension <= 2000;
+      // Check if name suggests it's a screen
+      const hasScreenName = /screen|page|view|layout|mobile|tablet|desktop|iphone|ipad|android/.test(name);
 
-    // Check if name suggests it's a screen
-    const hasScreenName = /screen|page|view|layout|mobile|tablet|desktop|iphone|ipad|android/.test(name);
+      // Check if it has multiple children (complex layout)
+      const hasComplexLayout = frame.children.length >= 2;
 
-    // Check if it has multiple children (complex layout)
-    const hasComplexLayout = frame.children.length >= 2;
-
-    return (hasDeviceDimensions || isReasonableSize) && (hasScreenName || hasComplexLayout);
+      return (hasDeviceDimensions || isReasonableSize) && (hasScreenName || hasComplexLayout);
+    } catch (error) {
+      console.warn('Error checking if frame is screen:', error);
+      return false;
+    }
   }
 
   /**
@@ -207,10 +216,10 @@ export class DeviceDetector {
   private static determineDeviceType(width: number, height: number): DeviceInfo['type'] {
     const minDimension = Math.min(width, height);
     
-    if (minDimension >= 768) {
-      return 'tablet';
-    } else if (minDimension >= 1024) {
+    if (minDimension >= 1024) {
       return 'desktop';
+    } else if (minDimension >= 768) {
+      return 'tablet';
     } else {
       return 'mobile';
     }

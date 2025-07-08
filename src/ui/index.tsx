@@ -7,7 +7,7 @@ import './styles/global.css';
 console.log('🎨 [UI] Starting Figma to React Native Plugin UI...');
 
 // Ensure DOM is ready and safe initialization
-const initializeUI = () => {
+const initializeUI = (): void => {
   try {
     const container = document.getElementById('root');
     if (!container) {

@@ -1,4 +1,9 @@
-// src/plugin/generators/ReactNativeGenerator.ts - Updated with Shared Types
+// src/plugin/generators/ReactNativeGenerator.ts - Fixed with Proper Types
+
+// Import Figma types first
+/// <reference types="@figma/plugin-typings" />
+
+
 import { 
   LayerData,
   DeviceInfo,

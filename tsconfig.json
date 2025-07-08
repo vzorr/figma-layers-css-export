@@ -22,9 +22,7 @@
       "@plugin/*": ["src/plugin/*"],
       "@ui/*": ["src/ui/*"],
       "@shared/*": ["src/shared/*"]
-    },
-    "typeRoots": ["./node_modules/@types"],
-    "types": []
+    }
   },
   "include": [
     "src/**/*"

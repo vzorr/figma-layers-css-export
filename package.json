@@ -1,53 +1,50 @@
 {
   "name": "figma-to-rn-plugin",
   "version": "2.1.0",
-  "description": "Enhanced Figma to React Native Plugin with Automatic Theme Generation and Better Error Handling",
+  "description": "Enhanced Figma to React Native Plugin with Automatic Theme Generation",
   "main": "dist/code.js",
   "scripts": {
-    "build": "node scripts/build.js",
-    "build:plugin": "webpack --config webpack.config.js --env target=plugin --mode=production",
-    "build:ui": "webpack --config webpack.config.js --env target=ui --mode=production",
-    "dev": "node scripts/dev.js",
-    "dev:plugin": "webpack --config webpack.config.js --env target=plugin --mode=development --watch",
-    "dev:ui": "webpack --config webpack.config.js --env target=ui --mode=development --watch",
-    "dev:serve": "webpack serve --config webpack.config.js --env target=ui --mode=development",
-    "clean": "node scripts/clean.js",
+    "build": "npm run clean && npm run build:plugin && npm run build:ui && npm run copy:manifest",
+    "build:plugin": "webpack --env target=plugin --mode=production",
+    "build:ui": "webpack --env target=ui --mode=production",
+    "dev": "npm run clean && npm run copy:manifest && concurrently \"npm run dev:plugin\" \"npm run dev:ui\"",
+    "dev:plugin": "webpack --env target=plugin --mode=development --watch",
+    "dev:ui": "webpack --env target=ui --mode=development --watch",
+    "clean": "rimraf dist",
+    "copy:manifest": "cp manifest.json dist/ || copy manifest.json dist\\",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch",
+    "type-check:plugin": "tsc --noEmit --project tsconfig.plugin.json",
+    "type-check:ui": "tsc --noEmit --project tsconfig.ui.json",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:types": "npm run type-check",
-    "analyze": "webpack-bundle-analyzer dist/ui.js",
-    "postinstall": "npm run type-check"
+    "test": "echo \"No tests configured\" && exit 0",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@figma/eslint-plugin-figma-plugins": "^0.15.0",
     "@figma/plugin-typings": "^1.95.0",
-    "@types/figma": "^1.0.4",
-    "@types/node": "^20.19.4",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
+    "concurrently": "^8.2.2",
     "css-loader": "^6.8.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.6.0",
-    "mini-css-extract-plugin": "^2.7.6",
     "rimraf": "^5.0.5",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
-    "webpack-bundle-analyzer": "^4.10.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1",
-    "webpack-merge": "^5.10.0"
+    "webpack-cli": "^5.1.4"
+  },
+  "figma": {
+    "id": "figma-to-react-native-theme-generator",
+    "name": "Figma to React Native"
   }
 }

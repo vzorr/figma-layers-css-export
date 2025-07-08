@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["ES2017"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "types": ["@figma/plugin-typings"],
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "jsx": "preserve",
+    "noEmit": false
+  },
+  "include": [
+    "src/plugin/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": [
+    "src/ui/**/*",
+    "node_modules",
+    "dist"
+  ]
+}
