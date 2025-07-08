@@ -1,5 +1,5 @@
-// src/ui/components/PluginUI.tsx - Fixed Event Types and DOM Access
-import React, { useState, useEffect } from 'react';
+// src/ui/components/PluginUI.tsx - Enhanced with Better Error Handling and Progress Tracking
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   DeviceInfo, 
   ThemeTokens, 
@@ -17,6 +17,19 @@ interface PluginState {
   selectedLayer: LayerData | null;
   isLoading: boolean;
   error: string | null;
+  analysisProgress: {
+    step: string;
+    progress: number;
+  } | null;
+}
+
+interface UIState {
+  activeTab: 'overview' | 'layers' | 'options';
+  showCodePanel: boolean;
+  generatedCode: string;
+  isGenerating: boolean;
+  lastGenerationTime: number | null;
+  connectionStatus: 'connecting' | 'connected' | 'error';
 }
 
 export const PluginUI: React.FC = () => {
@@ -27,133 +40,349 @@ export const PluginUI: React.FC = () => {
     layers: [],
     selectedLayer: null,
     isLoading: true,
-    error: null
+    error: null,
+    analysisProgress: null
   });
 
-  const [generatedCode, setGeneratedCode] = useState<string>('');
-  const [showCodePanel, setShowCodePanel] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'layers' | 'options'>('overview');
-
-  // Generation options
-  const [options, setOptions] = useState<GenerationOptions>({
-    useTypeScript: true,
-    useResponsive: true,
-    useThemeTokens: true,
-    componentType: 'screen',
-    includeNavigation: false,
-    outputFormat: 'single-file'
+  const [uiState, setUIState] = useState<UIState>({
+    activeTab: 'overview',
+    showCodePanel: false,
+    generatedCode: '',
+    isGenerating: false,
+    lastGenerationTime: null,
+    connectionStatus: 'connecting'
   });
+
+  // Generation options with persistence
+  const [options, setOptions] = useState<GenerationOptions>(() => {
+    try {
+      const saved = localStorage.getItem('figma-rn-options');
+      return saved ? JSON.parse(saved) : {
+        useTypeScript: true,
+        useResponsive: true,
+        useThemeTokens: true,
+        componentType: 'screen',
+        includeNavigation: false,
+        outputFormat: 'single-file'
+      };
+    } catch {
+      return {
+        useTypeScript: true,
+        useResponsive: true,
+        useThemeTokens: true,
+        componentType: 'screen',
+        includeNavigation: false,
+        outputFormat: 'single-file'
+      };
+    }
+  });
+
+  const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
+
+  // Save options to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('figma-rn-options', JSON.stringify(options));
+    } catch (error) {
+      console.warn('Failed to save options to localStorage:', error);
+    }
+  }, [options]);
 
   useEffect(() => {
     console.log('🎨 [PluginUI] Component mounted');
     
-    // Listen for messages from plugin
+    // Set up message listener
     const handleMessage = (event: MessageEvent) => {
       handlePluginMessage(event);
     };
     
     window.addEventListener('message', handleMessage);
     
-    // Send ready signal to plugin
-    sendMessage({ type: 'ui-ready' });
+    // Send ready signal with timeout
+    sendMessageWithTimeout({ type: 'ui-ready' });
+
+    // Set up connection timeout
+    const connectionTimeout = setTimeout(() => {
+      if (uiState.connectionStatus === 'connecting') {
+        setState(prev => ({ 
+          ...prev, 
+          error: 'Failed to connect to plugin backend. Please try refreshing.',
+          isLoading: false 
+        }));
+        setUIState(prev => ({ ...prev, connectionStatus: 'error' }));
+      }
+    }, 10000);
 
     return () => {
       window.removeEventListener('message', handleMessage);
+      clearTimeout(connectionTimeout);
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
     };
   }, []);
 
-  const handlePluginMessage = (event: MessageEvent) => {
+  const handlePluginMessage = useCallback((event: MessageEvent) => {
     const message: PluginToUIMessage = event.data.pluginMessage;
     if (!message) return;
 
     console.log(`📨 [PluginUI] Received: ${message.type}`);
 
+    // Clear any pending timeouts
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+      messageTimeoutRef.current = null;
+    }
+
+    // Update connection status
+    if (uiState.connectionStatus !== 'connected') {
+      setUIState(prev => ({ ...prev, connectionStatus: 'connected' }));
+    }
+
     switch (message.type) {
       case 'design-system-analyzed':
-        setState(prev => ({
-          ...prev,
-          devices: message.data.devices,
-          baseDevice: message.data.baseDevice,
-          themeTokens: message.data.themeTokens,
-          layers: message.data.layers,
-          isLoading: false,
-          error: null
-        }));
+        handleDesignSystemAnalyzed(message.data);
         break;
 
       case 'layers-data':
         setState(prev => ({
           ...prev,
-          layers: message.data,
-          isLoading: false
+          layers: Array.isArray(message.data) ? message.data : [],
+          isLoading: false,
+          error: null
         }));
         break;
 
       case 'theme-file-generated':
-        setGeneratedCode(message.data);
-        setShowCodePanel(true);
+        handleThemeFileGenerated(message.data);
         break;
 
       case 'react-native-generated':
-        setGeneratedCode(message.data);
-        setShowCodePanel(true);
+        handleReactNativeGenerated(message.data);
+        break;
+
+      case 'analysis-progress':
+        handleAnalysisProgress((message as any).data);
         break;
 
       case 'error':
+        handleError(message.message);
+        break;
+
+      default:
+        console.warn(`⚠️ [PluginUI] Unknown message type: ${message.type}`);
+    }
+  }, [uiState.connectionStatus]);
+
+  const handleDesignSystemAnalyzed = (data: any) => {
+    try {
+      setState(prev => ({
+        ...prev,
+        devices: Array.isArray(data.devices) ? data.devices : [],
+        baseDevice: data.baseDevice || null,
+        themeTokens: data.themeTokens || null,
+        layers: Array.isArray(data.layers) ? data.layers : [],
+        isLoading: false,
+        error: null,
+        analysisProgress: null
+      }));
+      
+      // Reset retry counter on success
+      retryCountRef.current = 0;
+    } catch (error) {
+      console.error('Error processing design system data:', error);
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to process design system data',
+        isLoading: false
+      }));
+    }
+  };
+
+  const handleThemeFileGenerated = (data: string) => {
+    if (typeof data === 'string' && data.length > 0) {
+      setUIState(prev => ({
+        ...prev,
+        generatedCode: data,
+        showCodePanel: true,
+        isGenerating: false
+      }));
+    } else {
+      handleError('Generated theme file is empty or invalid');
+    }
+  };
+
+  const handleReactNativeGenerated = (data: string) => {
+    if (typeof data === 'string' && data.length > 0) {
+      setUIState(prev => ({
+        ...prev,
+        generatedCode: data,
+        showCodePanel: true,
+        isGenerating: false,
+        lastGenerationTime: Date.now()
+      }));
+    } else {
+      handleError('Generated React Native code is empty or invalid');
+    }
+  };
+
+  const handleAnalysisProgress = (data: any) => {
+    try {
+      if (data && typeof data.step === 'string' && typeof data.progress === 'number') {
         setState(prev => ({
           ...prev,
-          error: message.message,
-          isLoading: false
+          analysisProgress: {
+            step: data.step,
+            progress: Math.max(0, Math.min(1, data.progress))
+          }
         }));
-        break;
-    }
-  };
-
-  const sendMessage = (message: UIToPluginMessage) => {
-    if (typeof window !== 'undefined' && window.parent) {
-      window.parent.postMessage({ pluginMessage: message }, '*');
-    }
-  };
-
-  const handleLayerSelect = (layer: LayerData) => {
-    setState(prev => ({ ...prev, selectedLayer: layer }));
-    sendMessage({ type: 'select-layer', layerId: layer.id });
-  };
-
-  const handleGenerateTheme = () => {
-    sendMessage({ type: 'get-theme-file' });
-  };
-
-  const handleGenerateReactNative = () => {
-    if (!state.selectedLayer) {
-      if (typeof window !== 'undefined' && window.alert) {
-        window.alert('Please select a layer first');
       }
+    } catch (error) {
+      console.warn('Error processing analysis progress:', error);
+    }
+  };
+
+  const handleError = (message: string) => {
+    console.error('Plugin error:', message);
+    setState(prev => ({
+      ...prev,
+      error: message,
+      isLoading: false,
+      analysisProgress: null
+    }));
+    setUIState(prev => ({
+      ...prev,
+      isGenerating: false
+    }));
+  };
+
+  const sendMessage = useCallback((message: UIToPluginMessage) => {
+    try {
+      if (typeof window !== 'undefined' && window.parent) {
+        window.parent.postMessage({ pluginMessage: message }, '*');
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      handleError('Failed to communicate with plugin backend');
+    }
+  }, []);
+
+  const sendMessageWithTimeout = useCallback((message: UIToPluginMessage, timeout: number = 5000) => {
+    sendMessage(message);
+    
+    // Set up timeout for critical messages
+    if (['ui-ready', 'get-layers', 'generate-react-native'].includes(message.type)) {
+      messageTimeoutRef.current = setTimeout(() => {
+        console.warn(`Message ${message.type} timed out`);
+        if (message.type === 'ui-ready') {
+          handleError('Plugin initialization timed out. Please try refreshing.');
+        }
+      }, timeout);
+    }
+  }, [sendMessage]);
+
+  const handleLayerSelect = useCallback((layer: LayerData) => {
+    if (!layer || !layer.id) {
+      console.warn('Invalid layer selected');
       return;
     }
 
-    sendMessage({
+    setState(prev => ({ ...prev, selectedLayer: layer }));
+    sendMessage({ type: 'select-layer', layerId: layer.id });
+  }, [sendMessage]);
+
+  const handleGenerateTheme = useCallback(() => {
+    if (uiState.isGenerating) return;
+    
+    setUIState(prev => ({ ...prev, isGenerating: true }));
+    sendMessageWithTimeout({ type: 'get-theme-file' });
+  }, [uiState.isGenerating, sendMessageWithTimeout]);
+
+  const handleGenerateReactNative = useCallback(() => {
+    if (!state.selectedLayer) {
+      handleError('Please select a layer first');
+      return;
+    }
+
+    if (uiState.isGenerating) return;
+
+    setUIState(prev => ({ ...prev, isGenerating: true }));
+    sendMessageWithTimeout({
       type: 'generate-react-native',
       layerId: state.selectedLayer.id,
       options
     });
-  };
+  }, [state.selectedLayer, options, uiState.isGenerating, sendMessageWithTimeout]);
 
-  const handleReanalyze = () => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    sendMessage({ type: 'reanalyze-design-system' });
-  };
+  const handleReanalyze = useCallback(() => {
+    if (state.isLoading) return;
 
-  const copyToClipboard = async () => {
+    setState(prev => ({ 
+      ...prev, 
+      isLoading: true, 
+      error: null, 
+      analysisProgress: { step: 'Starting analysis...', progress: 0 } 
+    }));
+    retryCountRef.current = 0;
+    sendMessageWithTimeout({ type: 'reanalyze-design-system' });
+  }, [state.isLoading, sendMessageWithTimeout]);
+
+  const handleRetry = useCallback(() => {
+    if (retryCountRef.current >= maxRetries) {
+      handleError('Maximum retry attempts reached. Please refresh the plugin.');
+      return;
+    }
+
+    retryCountRef.current++;
+    setState(prev => ({ 
+      ...prev, 
+      isLoading: true, 
+      error: null,
+      analysisProgress: { step: 'Retrying...', progress: 0 }
+    }));
+    sendMessageWithTimeout({ type: 'ui-ready' });
+  }, [sendMessageWithTimeout]);
+
+  const copyToClipboard = useCallback(async () => {
+    if (!uiState.generatedCode) return;
+
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(generatedCode);
+        await navigator.clipboard.writeText(uiState.generatedCode);
         console.log('✅ Code copied to clipboard');
+        // Show success feedback
+        const originalText = uiState.generatedCode;
+        setUIState(prev => ({ ...prev, generatedCode: '✅ Copied!' }));
+        setTimeout(() => {
+          setUIState(prev => ({ ...prev, generatedCode: originalText }));
+        }, 1000);
       }
     } catch (error) {
       console.error('Failed to copy:', error);
+      handleError('Failed to copy to clipboard');
     }
-  };
+  }, [uiState.generatedCode]);
+
+  const downloadCode = useCallback(() => {
+    if (!uiState.generatedCode) return;
+
+    try {
+      const blob = new Blob([uiState.generatedCode], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${state.selectedLayer?.name || 'Component'}.${options.useTypeScript ? 'tsx' : 'jsx'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download:', error);
+      handleError('Failed to download file');
+    }
+  }, [uiState.generatedCode, state.selectedLayer, options.useTypeScript]);
 
   const renderLayerTree = (layers: LayerData[], depth = 0): React.ReactNode => {
     return layers.map(layer => (
@@ -194,57 +423,105 @@ export const PluginUI: React.FC = () => {
     return icons[type] || '⚪';
   };
 
+  const getProgressStepText = (step: string): string => {
+    const stepTexts: Record<string, string> = {
+      'devices': 'Detecting device types...',
+      'base-device': 'Selecting base device...',
+      'theme-tokens': 'Extracting design tokens...',
+      'layers': 'Analyzing layers...',
+      'complete': 'Analysis complete!'
+    };
+    return stepTexts[step] || step;
+  };
+
+  // Loading state with progress
   if (state.isLoading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Analyzing design system...</p>
-        <small>Detecting devices, extracting colors, and analyzing components...</small>
+        {state.analysisProgress ? (
+          <>
+            <p>{getProgressStepText(state.analysisProgress.step)}</p>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${state.analysisProgress.progress * 100}%` }}
+              />
+            </div>
+            <small>{Math.round(state.analysisProgress.progress * 100)}% complete</small>
+          </>
+        ) : (
+          <>
+            <p>Analyzing design system...</p>
+            <small>Detecting devices, extracting colors, and analyzing components...</small>
+          </>
+        )}
       </div>
     );
   }
 
+  // Error state with retry
   if (state.error) {
     return (
       <div className="error-container">
         <p className="error-message">❌ {state.error}</p>
-        <button onClick={handleReanalyze} className="btn btn-primary">
-          Try Again
-        </button>
+        <div className="error-actions">
+          <button onClick={handleRetry} className="btn btn-primary">
+            🔄 Retry ({retryCountRef.current}/{maxRetries})
+          </button>
+          <button onClick={() => window.location.reload()} className="btn btn-secondary">
+            🔄 Refresh Plugin
+          </button>
+        </div>
+        {retryCountRef.current >= maxRetries && (
+          <small className="error-help">
+            If this problem persists, try closing and reopening the plugin.
+          </small>
+        )}
       </div>
     );
   }
 
   return (
     <div className="plugin-container">
-      {!showCodePanel ? (
+      {!uiState.showCodePanel ? (
         // Main UI
         <div className="main-panel">
-          {/* Header */}
+          {/* Header with connection status */}
           <div className="header">
-            <h1>🎨 Figma → React Native</h1>
+            <div className="header-main">
+              <h1>🎨 Figma → React Native</h1>
+              <div className={`connection-status ${uiState.connectionStatus}`}>
+                {uiState.connectionStatus === 'connected' && '🟢'}
+                {uiState.connectionStatus === 'connecting' && '🟡'}
+                {uiState.connectionStatus === 'error' && '🔴'}
+              </div>
+            </div>
             <p>
               {state.devices.length} devices • {state.themeTokens?.colors.length || 0} colors • {state.layers.length} screens
+              {uiState.lastGenerationTime && (
+                <> • Last generated: {new Date(uiState.lastGenerationTime).toLocaleTimeString()}</>
+              )}
             </p>
           </div>
 
           {/* Navigation Tabs */}
           <div className="tabs">
             <button 
-              className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
+              className={`tab ${uiState.activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setUIState(prev => ({ ...prev, activeTab: 'overview' }))}
             >
               📊 Overview
             </button>
             <button 
-              className={`tab ${activeTab === 'layers' ? 'active' : ''}`}
-              onClick={() => setActiveTab('layers')}
+              className={`tab ${uiState.activeTab === 'layers' ? 'active' : ''}`}
+              onClick={() => setUIState(prev => ({ ...prev, activeTab: 'layers' }))}
             >
               📋 Screens ({state.layers.length})
             </button>
             <button 
-              className={`tab ${activeTab === 'options' ? 'active' : ''}`}
-              onClick={() => setActiveTab('options')}
+              className={`tab ${uiState.activeTab === 'options' ? 'active' : ''}`}
+              onClick={() => setUIState(prev => ({ ...prev, activeTab: 'options' }))}
             >
               ⚙️ Options
             </button>
@@ -252,7 +529,7 @@ export const PluginUI: React.FC = () => {
 
           <div className="content">
             {/* Overview Tab */}
-            {activeTab === 'overview' && (
+            {uiState.activeTab === 'overview' && (
               <div className="overview-section">
                 {/* Device Summary */}
                 {state.devices.length > 0 && (
@@ -311,12 +588,14 @@ export const PluginUI: React.FC = () => {
                     <button 
                       onClick={handleGenerateTheme}
                       className="btn btn-secondary"
+                      disabled={uiState.isGenerating}
                     >
-                      📄 Generate Theme File
+                      {uiState.isGenerating ? '⏳ Generating...' : '📄 Generate Theme File'}
                     </button>
                     <button 
                       onClick={handleReanalyze}
                       className="btn btn-secondary"
+                      disabled={state.isLoading}
                     >
                       🔄 Reanalyze Design
                     </button>
@@ -326,7 +605,7 @@ export const PluginUI: React.FC = () => {
             )}
 
             {/* Layers Tab */}
-            {activeTab === 'layers' && (
+            {uiState.activeTab === 'layers' && (
               <div className="layers-section">
                 <div className="section-header">
                   <h3>📋 Screens & Components</h3>
@@ -386,7 +665,7 @@ export const PluginUI: React.FC = () => {
             )}
 
             {/* Options Tab */}
-            {activeTab === 'options' && (
+            {uiState.activeTab === 'options' && (
               <div className="options-section">
                 <h3>⚙️ Generation Options</h3>
                 
@@ -467,17 +746,18 @@ export const PluginUI: React.FC = () => {
             <button 
               onClick={handleGenerateTheme}
               className="btn btn-secondary"
+              disabled={uiState.isGenerating}
               title="Generate theme file with extracted design tokens"
             >
-              📄 Generate Theme
+              {uiState.isGenerating ? '⏳' : '📄'} Generate Theme
             </button>
             <button 
               onClick={handleGenerateReactNative}
               className="btn btn-primary"
-              disabled={!state.selectedLayer}
+              disabled={!state.selectedLayer || uiState.isGenerating}
               title="Generate React Native component from selected layer"
             >
-              🚀 Generate Component
+              {uiState.isGenerating ? '⏳ Generating...' : '🚀 Generate Component'}
             </button>
           </div>
         </div>
@@ -490,14 +770,17 @@ export const PluginUI: React.FC = () => {
               <button onClick={copyToClipboard} className="btn btn-primary">
                 📋 Copy
               </button>
-              <button onClick={() => setShowCodePanel(false)} className="btn btn-secondary">
+              <button onClick={downloadCode} className="btn btn-secondary">
+                💾 Download
+              </button>
+              <button onClick={() => setUIState(prev => ({ ...prev, showCodePanel: false }))} className="btn btn-secondary">
                 ← Back
               </button>
             </div>
           </div>
           <div className="code-container">
             <pre className="code-output">
-              <code>{generatedCode}</code>
+              <code>{uiState.generatedCode}</code>
             </pre>
           </div>
         </div>

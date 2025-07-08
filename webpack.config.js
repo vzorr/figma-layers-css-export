@@ -27,21 +27,20 @@ module.exports = (env) => {
           use: {
             loader: 'ts-loader',
             options: {
-              transpileOnly: false, // Keep type checking
+              transpileOnly: false,
               compilerOptions: {
-                // Override specific options based on target
                 ...(target === 'plugin' ? {
                   target: 'ES2017',
                   lib: ['ES2017'],
                   module: 'CommonJS',
                   jsx: 'preserve',
-                  noEmit: false // Allow emit for webpack
+                  noEmit: false
                 } : {
                   target: 'ES2020',
                   lib: ['ES2020', 'DOM', 'DOM.Iterable'],
                   module: 'ESNext',
                   jsx: 'react-jsx',
-                  noEmit: false // Allow emit for webpack
+                  noEmit: false
                 })
               }
             },
@@ -68,7 +67,6 @@ module.exports = (env) => {
         clean: {
           keep: /ui\.(html|js|css)$/,
         },
-        // Ensure proper module format for Figma
         library: {
           type: 'commonjs2'
         }
@@ -82,16 +80,15 @@ module.exports = (env) => {
         moduleIds: 'named',
         chunkIds: 'named',
       },
-      // Plugin-specific performance hints
       performance: {
-        maxAssetSize: 1000000, // 1MB - Figma plugins should be reasonably sized
+        maxAssetSize: 1000000,
         maxEntrypointSize: 1000000,
         hints: isProduction ? 'warning' : false
       }
     };
   }
 
-  // UI Configuration
+  // UI Configuration - FIXED TEMPLATE PATH
   return {
     ...commonConfig,
     name: 'ui',
@@ -119,7 +116,8 @@ module.exports = (env) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        template: path.resolve(__dirname, 'src/ui/template.html'),
+        // FIXED: Use the correct template path
+        template: path.resolve(__dirname, 'public/ui.html'),
         filename: 'ui.html',
         chunks: ['ui'],
         inject: 'body',
@@ -161,11 +159,27 @@ module.exports = (env) => {
         },
       },
     },
-    // UI-specific performance hints
     performance: {
-      maxAssetSize: 500000, // 500KB - UI should be lightweight
+      maxAssetSize: 500000,
       maxEntrypointSize: 500000,
       hints: isProduction ? 'warning' : false
-    }
+    },
+    // Add development server configuration
+    devServer: {
+      static: {
+        directory: path.join(__dirname, 'dist'),
+      },
+      port: 3000,
+      hot: true,
+      open: false,
+      compress: true,
+      historyApiFallback: true,
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false,
+        },
+      },
+    },
   };
 };
