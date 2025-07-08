@@ -4,7 +4,7 @@
 // FIGMA API TYPES (Enhanced)
 // ============================================================================
 
-// Use Figma's built-in Vector type instead of defining our own
+// Use Figma's built-in types instead of defining our own
 
 interface RGB {
   r: number;
@@ -243,12 +243,12 @@ export interface NodeProperties {
   primaryAxisAlignItems?: string;
   counterAxisAlignItems?: string;
   
-  // Visual properties (Enhanced)
-  fills?: FigmaFill[];
-  strokes?: FigmaStroke[];
+  // Visual properties (Use Figma's built-in types)
+  fills?: readonly Paint[];
+  strokes?: readonly Paint[];
   strokeWeight?: number;
   cornerRadius?: number;
-  effects?: FigmaEffect[];
+  effects?: readonly Effect[];
   opacity?: number;
   rotation?: number;
   

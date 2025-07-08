@@ -104,7 +104,7 @@ export class PluginManager {
         break;
 
       default:
-        console.warn(`⚠️ [PluginManager] Unknown message type: ${msg}`);
+        console.warn(`⚠️ [PluginManager] Unknown message type: ${msg.type}`);
     }
   }
 
@@ -396,11 +396,11 @@ export class PluginManager {
 
     // Extract visual properties with null checks
     if ('fills' in node && node.fills) {
-      props.fills = Array.isArray(node.fills) ? node.fills : [node.fills];
+      props.fills = node.fills as readonly Paint[];
     }
 
     if ('strokes' in node && node.strokes) {
-      props.strokes = Array.isArray(node.strokes) ? node.strokes : [node.strokes];
+      props.strokes = node.strokes as readonly Paint[];
       if ('strokeWeight' in node && typeof node.strokeWeight === 'number') {
         props.strokeWeight = node.strokeWeight;
       }
@@ -422,7 +422,7 @@ export class PluginManager {
     }
 
     if ('effects' in node && node.effects) {
-      props.effects = Array.isArray(node.effects) ? node.effects : [node.effects];
+      props.effects = node.effects as readonly Effect[];
     }
 
     // Safe opacity extraction (can be figma.mixed)
