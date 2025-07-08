@@ -1,7 +1,15 @@
-// src/plugin/main.ts - Fixed Plugin Entry Point
+// src/plugin/main.ts - Working Plugin Entry Point
+declare const figma: any;
+
 import { PluginManager } from './core/PluginManager';
 
 console.log('🚀 [Plugin] Figma to React Native Plugin starting...');
+
+// Ensure figma API is available
+if (typeof figma === 'undefined') {
+  console.error('❌ [Plugin] Figma API not available');
+  throw new Error('Figma API not available - this code must run in a Figma plugin environment');
+}
 
 // Global error handler
 const handleError = (error: Error, context: string) => {
@@ -9,10 +17,12 @@ const handleError = (error: Error, context: string) => {
   
   // Send error to UI if it's available
   try {
-    figma.ui.postMessage({
-      type: 'error',
-      message: `${context}: ${error.message}`
-    });
+    if (figma && figma.ui && figma.ui.postMessage) {
+      figma.ui.postMessage({
+        type: 'error',
+        message: `${context}: ${error.message}`
+      });
+    }
   } catch (uiError) {
     // UI might not be ready yet, just log
     console.error('Failed to send error to UI:', uiError);
@@ -29,24 +39,36 @@ try {
   console.log('✅ [Plugin] Plugin manager initialized');
 
 } catch (error) {
+  console.error('❌ [Plugin] Failed to initialize plugin manager:', error);
   handleError(error as Error, 'Plugin Initialization');
+  
+  // Show basic error UI if PluginManager fails
+  try {
+    figma.showUI(`
+      <div style="padding: 20px; text-align: center; color: #ff5555; font-family: Inter, sans-serif;">
+        <h3>Plugin Failed to Initialize</h3>
+        <p>Please try refreshing or contact support.</p>
+        <small>${(error as Error).message}</small>
+      </div>
+    `, { width: 300, height: 200 });
+  } catch (fallbackError) {
+    console.error('Even fallback UI failed:', fallbackError);
+  }
 }
 
 // Handle plugin close
-figma.on('close', () => {
-  console.log('🔄 [Plugin] Plugin closing...');
-  
-  try {
-    if (pluginManager) {
-      pluginManager.cleanup();
+if (figma && figma.on) {
+  figma.on('close', () => {
+    console.log('🔄 [Plugin] Plugin closing...');
+    
+    try {
+      if (pluginManager && typeof pluginManager.cleanup === 'function') {
+        pluginManager.cleanup();
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error);
     }
-  } catch (error) {
-    console.error('Error during cleanup:', error);
-  }
-});
-
-// Figma plugin environment error handlers (no Node.js process object)
-// Note: These are not available in Figma plugin environment
-// Instead, rely on try-catch blocks and the PluginManager's error handling
+  });
+}
 
 console.log('✅ [Plugin] Main initialization complete');

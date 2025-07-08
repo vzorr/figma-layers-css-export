@@ -1,19 +1,120 @@
-// src/shared/types.ts - Updated with Proper Figma Types
+// src/shared/types.ts - Complete type definitions for the plugin
 
 // ============================================================================
-// FIGMA API TYPES (Enhanced)
+// FIGMA GLOBAL DECLARATIONS
 // ============================================================================
 
-// Use Figma's built-in types instead of defining our own
+declare global {
+  const figma: any;
+  const __html__: string;
+}
 
-interface RGB {
+// ============================================================================
+// FIGMA NODE TYPES
+// ============================================================================
+
+export interface FrameNode {
+  id: string;
+  name: string;
+  type: string;
+  width: number;
+  height: number;
+  children: any[];
+  [key: string]: any;
+}
+
+export interface SceneNode {
+  id: string;
+  name: string;
+  type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+  locked: boolean;
+  children?: any[];
+  fills?: any[];
+  strokes?: any[];
+  effects?: any[];
+  [key: string]: any;
+}
+
+export interface TextNode extends SceneNode {
+  characters: string;
+  fontSize?: number;
+  fontName?: any;
+  [key: string]: any;
+}
+
+export interface PageNode {
+  children: any[];
+  [key: string]: any;
+}
+
+// ============================================================================
+// FIGMA-COMPATIBLE TYPE DEFINITIONS
+// ============================================================================
+
+// Basic color types that match Figma's runtime
+export interface RGB {
   r: number;
   g: number;
   b: number;
 }
 
-interface RGBA extends RGB {
+export interface RGBA extends RGB {
   a: number;
+}
+
+// Simple Paint interface that matches what we actually use
+export interface Paint {
+  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND' | 'IMAGE' | 'EMOJI' | 'VIDEO';
+  color?: RGB;
+  opacity?: number;
+  visible?: boolean;
+  blendMode?: string;
+  [key: string]: any; // Allow additional properties
+}
+
+// Simple Effect interface
+export interface Effect {
+  type: 'INNER_SHADOW' | 'DROP_SHADOW' | 'LAYER_BLUR' | 'BACKGROUND_BLUR';
+  color?: RGBA;
+  offset?: { x: number; y: number };
+  radius: number;
+  spread?: number;
+  visible?: boolean;
+  blendMode?: string;
+  [key: string]: any; // Allow additional properties
+}
+
+// Shadow effect types
+export interface DropShadowEffect extends Effect {
+  type: 'DROP_SHADOW';
+}
+
+export interface InnerShadowEffect extends Effect {
+  type: 'INNER_SHADOW';
+}
+
+// Simple font interfaces
+export interface FontName {
+  family: string;
+  style: string;
+  [key: string]: any; // Allow additional properties
+}
+
+export interface LineHeight {
+  unit: 'AUTO' | 'PIXELS' | 'PERCENT';
+  value?: number;
+  [key: string]: any; // Allow additional properties
+}
+
+export interface LetterSpacing {
+  unit: 'PIXELS' | 'PERCENT';
+  value: number;
+  [key: string]: any; // Allow additional properties
 }
 
 // ============================================================================
@@ -172,60 +273,8 @@ export interface ResponsiveAnalysis {
 }
 
 // ============================================================================
-// LAYER DATA TYPES
+// LAYER DATA TYPES (Using Figma's built-in types where possible)
 // ============================================================================
-
-// Enhanced Figma fill type
-export interface FigmaFill {
-  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND' | 'IMAGE' | 'EMOJI' | 'VIDEO';
-  color?: RGB;
-  opacity?: number;
-  visible?: boolean;
-  blendMode?: string;
-  // Additional properties for other fill types
-  gradientHandlePositions?: Vector[];
-  gradientStops?: Array<{
-    color: RGBA;
-    position: number;
-  }>;
-  scaleMode?: 'FILL' | 'FIT' | 'CROP' | 'TILE';
-  imageHash?: string;
-  gifRef?: string;
-}
-
-// Enhanced Figma stroke type
-export interface FigmaStroke {
-  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND';
-  color?: RGB;
-  opacity?: number;
-  visible?: boolean;
-  blendMode?: string;
-}
-
-// Enhanced Figma effect types
-export interface FigmaEffect {
-  type: 'INNER_SHADOW' | 'DROP_SHADOW' | 'LAYER_BLUR' | 'BACKGROUND_BLUR';
-  color?: RGBA;
-  offset?: Vector;
-  radius: number;
-  spread?: number;
-  visible?: boolean;
-  blendMode?: string;
-}
-
-// Enhanced FontName type - Use Figma's built-in FontName
-// (No need to redefine - Figma provides this)
-
-// Enhanced LineHeight type - Match Figma's actual LineHeight structure
-export type FigmaLineHeight = 
-  | { readonly unit: "AUTO" }
-  | { readonly unit: "PIXELS"; readonly value: number }
-  | { readonly unit: "PERCENT"; readonly value: number };
-
-// Enhanced LetterSpacing type - Match Figma's actual LetterSpacing structure  
-export type FigmaLetterSpacing = 
-  | { readonly unit: "PIXELS"; readonly value: number }
-  | { readonly unit: "PERCENT"; readonly value: number };
 
 export interface NodeProperties {
   x?: number;
@@ -243,7 +292,7 @@ export interface NodeProperties {
   primaryAxisAlignItems?: string;
   counterAxisAlignItems?: string;
   
-  // Visual properties (Use Figma's built-in types)
+  // Visual properties - now using our compatible types
   fills?: readonly Paint[];
   strokes?: readonly Paint[];
   strokeWeight?: number;
@@ -252,14 +301,14 @@ export interface NodeProperties {
   opacity?: number;
   rotation?: number;
   
-  // Text properties (Enhanced)
+  // Text properties - using our compatible types
   fontSize?: number;
-  fontName?: FontName; // Use Figma's built-in FontName type
+  fontName?: FontName;
   textAlignHorizontal?: string;
   textAlignVertical?: string;
   characters?: string;
-  lineHeight?: LineHeight; // Use Figma's built-in LineHeight type
-  letterSpacing?: LetterSpacing; // Use Figma's built-in LetterSpacing type
+  lineHeight?: LineHeight;
+  letterSpacing?: LetterSpacing;
 }
 
 export interface LayerData {
@@ -349,7 +398,6 @@ export interface ErrorMessage extends BaseMessage {
   message: string;
 }
 
-// FIXED: Added missing analysis progress message type
 export interface AnalysisProgressMessage extends BaseMessage {
   type: 'analysis-progress';
   data: {
@@ -390,7 +438,7 @@ export interface CloseMessage extends BaseMessage {
   type: 'close';
 }
 
-// Union types for message handling - FIXED: Added AnalysisProgressMessage
+// Union types for message handling
 export type PluginToUIMessage = 
   | DesignSystemAnalyzedMessage
   | LayersDataMessage

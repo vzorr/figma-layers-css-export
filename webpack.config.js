@@ -20,6 +20,36 @@ module.exports = (env) => {
         '@shared': path.resolve(__dirname, 'src/shared'),
       },
     },
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/,
+          use: {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: false, // Enable type checking
+              configFile: path.resolve(__dirname, 'tsconfig.json'),
+              compilerOptions: {
+                ...(target === 'plugin' ? {
+                  target: 'ES2017',
+                  lib: ['ES2017'],
+                  module: 'CommonJS',
+                  jsx: 'preserve',
+                  noEmit: false
+                } : {
+                  target: 'ES2020',
+                  lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+                  module: 'ESNext',
+                  jsx: 'react-jsx',
+                  noEmit: false
+                })
+              }
+            },
+          },
+          exclude: /node_modules/,
+        },
+      ],
+    },
     stats: {
       errorDetails: true,
       children: true,
@@ -46,30 +76,6 @@ module.exports = (env) => {
       externals: {
         figma: 'figma',
       },
-      module: {
-        rules: [
-          {
-            test: /\.tsx?$/,
-            use: {
-              loader: 'ts-loader',
-              options: {
-                transpileOnly: false,
-                compilerOptions: {
-                  target: 'ES2017',
-                  lib: ['ES2017'],
-                  module: 'CommonJS',
-                  jsx: 'preserve',
-                  noEmit: false,
-                  // Plugin-specific config - no DOM
-                  skipLibCheck: true,
-                  declaration: false
-                }
-              },
-            },
-            exclude: /node_modules/,
-          },
-        ],
-      },
       optimization: {
         minimize: isProduction,
         moduleIds: 'named',
@@ -83,7 +89,7 @@ module.exports = (env) => {
     };
   }
 
-  // UI Configuration - FIXED: Proper TypeScript config for browser environment
+  // UI Configuration
   return {
     ...commonConfig,
     name: 'ui',
@@ -97,30 +103,9 @@ module.exports = (env) => {
     },
     target: 'web',
     module: {
+      ...commonConfig.module,
       rules: [
-        {
-          test: /\.tsx?$/,
-          use: {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: false,
-              compilerOptions: {
-                target: 'ES2020',
-                lib: ['ES2020', 'DOM', 'DOM.Iterable'], // FIXED: Include DOM libs
-                module: 'ESNext',
-                jsx: 'react-jsx',
-                noEmit: false,
-                // UI-specific config - include DOM
-                skipLibCheck: true,
-                declaration: false,
-                moduleResolution: 'node',
-                allowSyntheticDefaultImports: true,
-                esModuleInterop: true
-              }
-            },
-          },
-          exclude: /node_modules/,
-        },
+        ...commonConfig.module.rules,
         {
           test: /\.css$/,
           use: [

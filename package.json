@@ -21,28 +21,6 @@
     "analyze": "webpack-bundle-analyzer dist/ui.js",
     "postinstall": "npm run type-check"
   },
-  "keywords": [
-    "figma",
-    "plugin",
-    "react-native",
-    "design-system",
-    "theme-generation",
-    "code-generation",
-    "responsive-design",
-    "typescript",
-    "design-tokens",
-    "automation"
-  ],
-  "author": "Your Name <your.email@example.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/figma-to-rn-plugin.git"
-  },
-  "homepage": "https://github.com/yourusername/figma-to-rn-plugin#readme",
-  "bugs": {
-    "url": "https://github.com/yourusername/figma-to-rn-plugin/issues"
-  },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -71,37 +49,5 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.10.0"
-  },
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  },
-  "browserslist": [
-    "last 2 Chrome versions",
-    "last 2 Firefox versions",
-    "last 2 Safari versions"
-  ],
-  "figma": {
-    "id": "figma-to-rn-plugin",
-    "name": "Figma to React Native",
-    "main": "dist/code.js",
-    "ui": "dist/ui.html",
-    "documentAccess": "dynamic-page",
-    "editorType": [
-      "figma"
-    ],
-    "networkAccess": {
-      "allowedDomains": [
-        "none"
-      ]
-    }
-  },
-  "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
-  },
-  "volta": {
-    "node": "18.19.0",
-    "npm": "10.2.3"
   }
 }

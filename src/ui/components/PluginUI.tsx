@@ -1,4 +1,4 @@
-// src/ui/components/PluginUI.tsx - Enhanced with Better Error Handling and Progress Tracking
+// src/ui/components/PluginUI.tsx - Complete Fixed Version
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   DeviceInfo, 
@@ -53,43 +53,20 @@ export const PluginUI: React.FC = () => {
     connectionStatus: 'connecting'
   });
 
-  // Generation options with persistence
-  const [options, setOptions] = useState<GenerationOptions>(() => {
-    try {
-      const saved = localStorage.getItem('figma-rn-options');
-      return saved ? JSON.parse(saved) : {
-        useTypeScript: true,
-        useResponsive: true,
-        useThemeTokens: true,
-        componentType: 'screen',
-        includeNavigation: false,
-        outputFormat: 'single-file'
-      };
-    } catch {
-      return {
-        useTypeScript: true,
-        useResponsive: true,
-        useThemeTokens: true,
-        componentType: 'screen',
-        includeNavigation: false,
-        outputFormat: 'single-file'
-      };
-    }
+  // FIXED: Use in-memory state only (no localStorage in Figma plugins)
+  const [options, setOptions] = useState<GenerationOptions>({
+    useTypeScript: true,
+    useResponsive: true,
+    useThemeTokens: true,
+    componentType: 'screen',
+    includeNavigation: false,
+    outputFormat: 'single-file'
   });
 
-  // FIXED: Use correct timeout type for browser environment
+  // FIXED: Correct timeout type for browser environment
   const messageTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
-
-  // Save options to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('figma-rn-options', JSON.stringify(options));
-    } catch (error) {
-      console.warn('Failed to save options to localStorage:', error);
-    }
-  }, [options]);
 
   useEffect(() => {
     console.log('🎨 [PluginUI] Component mounted');
@@ -105,7 +82,7 @@ export const PluginUI: React.FC = () => {
     sendMessageWithTimeout({ type: 'ui-ready' });
 
     // Set up connection timeout
-    const connectionTimeout = setTimeout(() => {
+    const connectionTimeout = window.setTimeout(() => {
       if (uiState.connectionStatus === 'connecting') {
         setState(prev => ({ 
           ...prev, 
@@ -118,12 +95,12 @@ export const PluginUI: React.FC = () => {
 
     return () => {
       window.removeEventListener('message', handleMessage);
-      clearTimeout(connectionTimeout);
+      window.clearTimeout(connectionTimeout);
       if (messageTimeoutRef.current) {
-        clearTimeout(messageTimeoutRef.current);
+        window.clearTimeout(messageTimeoutRef.current);
       }
     };
-  }, []);
+  }, []); // FIXED: Remove uiState.connectionStatus dependency to prevent infinite loops
 
   const handlePluginMessage = useCallback((event: MessageEvent) => {
     const message: PluginToUIMessage = event.data.pluginMessage;
@@ -133,14 +110,17 @@ export const PluginUI: React.FC = () => {
 
     // Clear any pending timeouts
     if (messageTimeoutRef.current) {
-      clearTimeout(messageTimeoutRef.current);
+      window.clearTimeout(messageTimeoutRef.current);
       messageTimeoutRef.current = null;
     }
 
     // Update connection status
-    if (uiState.connectionStatus !== 'connected') {
-      setUIState(prev => ({ ...prev, connectionStatus: 'connected' }));
-    }
+    setUIState(prev => {
+      if (prev.connectionStatus !== 'connected') {
+        return { ...prev, connectionStatus: 'connected' };
+      }
+      return prev;
+    });
 
     switch (message.type) {
       case 'design-system-analyzed':
@@ -173,10 +153,9 @@ export const PluginUI: React.FC = () => {
         break;
 
       default:
-        // FIXED: Type narrowing - use type assertion for unknown message types
         console.warn(`⚠️ [PluginUI] Unknown message type: ${(message as any).type}`);
     }
-  }, [uiState.connectionStatus]);
+  }, []);
 
   const handleDesignSystemAnalyzed = (data: any) => {
     try {
@@ -274,8 +253,11 @@ export const PluginUI: React.FC = () => {
   const sendMessageWithTimeout = useCallback((message: UIToPluginMessage, timeout: number = 5000) => {
     sendMessage(message);
     
-    // Set up timeout for critical messages - FIXED: Use window.setTimeout
+    // Set up timeout for critical messages
     if (['ui-ready', 'get-layers', 'generate-react-native'].includes(message.type)) {
+      if (messageTimeoutRef.current) {
+        window.clearTimeout(messageTimeoutRef.current);
+      }
       messageTimeoutRef.current = window.setTimeout(() => {
         console.warn(`Message ${message.type} timed out`);
         if (message.type === 'ui-ready') {
@@ -360,6 +342,17 @@ export const PluginUI: React.FC = () => {
         setTimeout(() => {
           setUIState(prev => ({ ...prev, generatedCode: originalText }));
         }, 1000);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = uiState.generatedCode;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        console.log('✅ Code copied to clipboard (fallback)');
       }
     } catch (error) {
       console.error('Failed to copy:', error);
