@@ -1,17 +1,38 @@
-// src/plugin/analyzers/LayerAnalyzer.ts - Complete Updated Version
+// src/plugin/analyzers/LayerAnalyzer.ts - Fixed TypeScript Issues
 import { 
   LayerData, 
   NodeProperties, 
   DeviceInfo,
-  EdgeInsets,
   LayoutAnalysis,
   ComponentPattern,
   VisualProperties,
-  ShadowProperties,
   HierarchyAnalysis,
   TextAnalysis,
   ResponsiveAnalysis
 } from '../../shared/types';
+
+// Define proper types for Figma effects
+interface FigmaDropShadowEffect {
+  type: 'DROP_SHADOW';
+  color: RGB & { a?: number };
+  offset: Vector;
+  radius: number;
+  spread?: number;
+  visible?: boolean;
+  blendMode?: BlendMode;
+}
+
+interface FigmaInnerShadowEffect {
+  type: 'INNER_SHADOW';
+  color: RGB & { a?: number };
+  offset: Vector;
+  radius: number;
+  spread?: number;
+  visible?: boolean;
+  blendMode?: BlendMode;
+}
+
+type FigmaEffect = FigmaDropShadowEffect | FigmaInnerShadowEffect | Effect;
 
 export class LayerAnalyzer {
   
@@ -130,8 +151,8 @@ export class LayerAnalyzer {
 
     // Extract background color
     if (props.fills && Array.isArray(props.fills) && props.fills.length > 0) {
-      const fill = props.fills[0];
-      if (fill.type === 'SOLID') {
+      const fill = props.fills[0] as Paint;
+      if (fill && fill.type === 'SOLID' && 'color' in fill) {
         visual.backgroundColor = this.rgbToHex(fill.color);
       }
     }
@@ -143,26 +164,29 @@ export class LayerAnalyzer {
 
     // Extract border properties
     if (props.strokes && Array.isArray(props.strokes) && props.strokes.length > 0) {
-      const stroke = props.strokes[0];
-      if (stroke.type === 'SOLID') {
+      const stroke = props.strokes[0] as Paint;
+      if (stroke && stroke.type === 'SOLID' && 'color' in stroke) {
         visual.borderColor = this.rgbToHex(stroke.color);
         visual.borderWidth = props.strokeWeight || 1;
       }
     }
 
-    // Extract shadow properties
+    // Extract shadow properties - FIXED
     if (props.effects && Array.isArray(props.effects)) {
-      const shadow = props.effects.find(effect => effect.type === 'DROP_SHADOW');
-      if (shadow) {
+      const shadowEffect = props.effects.find((effect: Effect) => 
+        effect && effect.visible !== false && (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW')
+      ) as DropShadowEffect | InnerShadowEffect | undefined;
+      
+      if (shadowEffect) {
         visual.shadowProperties = {
-          shadowColor: this.rgbToHex(shadow.color),
+          shadowColor: this.rgbToHex(shadowEffect.color),
           shadowOffset: {
-            width: shadow.offset?.x || 0,
-            height: shadow.offset?.y || 0
+            width: shadowEffect.offset?.x || 0,
+            height: shadowEffect.offset?.y || 0
           },
-          shadowOpacity: shadow.color?.a || 0.25,
-          shadowRadius: shadow.radius || 4,
-          elevation: Math.round((shadow.radius || 4) / 2) // Android elevation
+          shadowOpacity: shadowEffect.color?.a || 0.25,
+          shadowRadius: shadowEffect.radius || 4,
+          elevation: Math.round((shadowEffect.radius || 4) / 2) // Android elevation
         };
       }
     }
@@ -191,12 +215,12 @@ export class LayerAnalyzer {
     const analysis: TextAnalysis = {
       content: props.characters || layer.name || '',
       fontSize: (typeof props.fontSize === 'number') ? props.fontSize : 16,
-      fontWeight: this.mapFigmaFontWeight(props.fontName?.style || 'Regular'),
-      fontFamily: props.fontName?.family || 'Inter',
+      fontWeight: this.mapFigmaFontWeight(this.getFontStyle(props.fontName)),
+      fontFamily: this.getFontFamily(props.fontName) || 'Inter',
       color: this.extractTextColor(props),
       textAlign: this.mapFigmaTextAlign(props.textAlignHorizontal),
-      lineHeight: (typeof props.lineHeight?.value === 'number') ? props.lineHeight.value : undefined,
-      letterSpacing: (typeof props.letterSpacing?.value === 'number') ? props.letterSpacing.value : undefined
+      lineHeight: this.getLineHeight(props.lineHeight),
+      letterSpacing: this.getLetterSpacing(props.letterSpacing)
     };
 
     // Determine text type
@@ -236,6 +260,47 @@ export class LayerAnalyzer {
   }
 
   // ============================================================================
+  // HELPER METHODS FOR TEXT PROPERTIES
+  // ============================================================================
+
+  private static getFontFamily(fontName: FontName | undefined): string {
+    if (!fontName) return 'Inter';
+    return fontName.family || 'Inter';
+  }
+
+  private static getFontStyle(fontName: FontName | undefined): string {
+    if (!fontName) return 'Regular';
+    return fontName.style || 'Regular';
+  }
+
+  private static getLineHeight(lineHeight: LineHeight | undefined): number | undefined {
+    if (!lineHeight) return undefined;
+    
+    // Handle Figma's LineHeight structure
+    if (typeof lineHeight === 'object') {
+      if (lineHeight.unit === 'AUTO') {
+        return undefined; // AUTO lineHeight doesn't have a numeric value
+      }
+      if ((lineHeight.unit === 'PIXELS' || lineHeight.unit === 'PERCENT') && 'value' in lineHeight) {
+        return lineHeight.value;
+      }
+    }
+    return undefined;
+  }
+
+  private static getLetterSpacing(letterSpacing: LetterSpacing | undefined): number | undefined {
+    if (!letterSpacing) return undefined;
+    
+    // Handle Figma's LetterSpacing structure
+    if (typeof letterSpacing === 'object' && 'value' in letterSpacing) {
+      if (letterSpacing.unit === 'PIXELS' || letterSpacing.unit === 'PERCENT') {
+        return letterSpacing.value;
+      }
+    }
+    return undefined;
+  }
+
+  // ============================================================================
   // PATTERN DETECTION METHODS
   // ============================================================================
 
@@ -248,7 +313,7 @@ export class LayerAnalyzer {
     if (/button|btn|cta|submit|action/.test(name)) confidence += 0.4;
 
     // Check if it has a background color
-    if (props.fills && props.fills.length > 0) confidence += 0.2;
+    if (props.fills && Array.isArray(props.fills) && props.fills.length > 0) confidence += 0.2;
 
     // Check if it has rounded corners
     if (props.cornerRadius && props.cornerRadius > 0) confidence += 0.2;
@@ -267,7 +332,7 @@ export class LayerAnalyzer {
       type: 'button',
       confidence: Math.min(confidence, 1),
       properties: {
-        hasBackground: !!(props.fills && props.fills.length > 0),
+        hasBackground: !!(props.fills && Array.isArray(props.fills) && props.fills.length > 0),
         hasRoundedCorners: !!(props.cornerRadius && props.cornerRadius > 0),
         textContent: this.extractTextFromChildren(layer)
       },
@@ -312,8 +377,14 @@ export class LayerAnalyzer {
     if (/card|tile|item|post/.test(name)) confidence += 0.3;
 
     // Check if it has shadow or border
-    if (props.effects?.some(effect => effect.type === 'DROP_SHADOW')) confidence += 0.3;
-    if (props.strokes?.length && props.strokes.length > 0) confidence += 0.2;
+    if (props.effects && Array.isArray(props.effects)) {
+      const hasShadow = props.effects.some((effect: Effect) => 
+        effect && effect.visible !== false && effect.type === 'DROP_SHADOW'
+      );
+      if (hasShadow) confidence += 0.3;
+    }
+    
+    if (props.strokes && Array.isArray(props.strokes) && props.strokes.length > 0) confidence += 0.2;
 
     // Check if it has rounded corners
     if (props.cornerRadius && props.cornerRadius > 4) confidence += 0.2;
@@ -325,8 +396,9 @@ export class LayerAnalyzer {
       type: 'card',
       confidence: Math.min(confidence, 1),
       properties: {
-        hasElevation: !!(props.effects?.some(effect => effect.type === 'DROP_SHADOW')),
-        hasBorder: !!(props.strokes?.length && props.strokes.length > 0),
+        hasElevation: !!(props.effects && Array.isArray(props.effects) && 
+          props.effects.some((effect: Effect) => effect && effect.visible !== false && effect.type === 'DROP_SHADOW')),
+        hasBorder: !!(props.strokes && Array.isArray(props.strokes) && props.strokes.length > 0),
         childrenCount: layer.children?.length || 0
       },
       interactionType: this.isClickableCard(layer) ? 'touchable' : 'static',
@@ -519,7 +591,7 @@ export class LayerAnalyzer {
   private static hasImageFill(layer: LayerData): boolean {
     const fills = layer.properties?.fills;
     if (!fills || !Array.isArray(fills)) return false;
-    return fills.some(fill => fill.type === 'IMAGE');
+    return fills.some((fill: Paint) => fill && fill.type === 'IMAGE');
   }
 
   private static extractTextFromChildren(layer: LayerData): string {
@@ -591,8 +663,8 @@ export class LayerAnalyzer {
 
   private static extractTextColor(props: NodeProperties): string {
     if (props.fills && Array.isArray(props.fills) && props.fills.length > 0) {
-      const fill = props.fills[0];
-      if (fill.type === 'SOLID') {
+      const fill = props.fills[0] as Paint;
+      if (fill && fill.type === 'SOLID' && 'color' in fill) {
         return this.rgbToHex(fill.color);
       }
     }
@@ -600,17 +672,17 @@ export class LayerAnalyzer {
   }
 
   private static isHeadingText(analysis: TextAnalysis): boolean {
-    return analysis.fontSize >= 20 || analysis.fontWeight >= '600';
+    return analysis.fontSize >= 20 || parseInt(analysis.fontWeight) >= 600;
   }
 
   private static isButtonText(layer: LayerData, analysis: TextAnalysis): boolean {
     // Check if text is inside a button-like container
     const name = layer.name.toLowerCase();
-    return /button|btn|cta/.test(name) || analysis.fontWeight >= '600';
+    return /button|btn|cta/.test(name) || parseInt(analysis.fontWeight) >= 600;
   }
 
   private static isLabelText(analysis: TextAnalysis): boolean {
-    return analysis.fontSize <= 14 && analysis.fontWeight < '600';
+    return analysis.fontSize <= 14 && parseInt(analysis.fontWeight) < 600;
   }
 
   private static determinePositionType(layer: LayerData): 'relative' | 'absolute' {

@@ -27,20 +27,22 @@ module.exports = (env) => {
           use: {
             loader: 'ts-loader',
             options: {
-              configFile: path.resolve(__dirname, 'tsconfig.json'),
               transpileOnly: false, // Keep type checking
-              compilerOptions: target === 'plugin' ? {
-                target: 'ES2017',
-                lib: ['ES2017'],
-                module: 'CommonJS',
-                jsx: 'preserve',
-                moduleResolution: 'node'
-              } : {
-                target: 'ES2020',
-                lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-                module: 'ESNext',
-                jsx: 'react-jsx',
-                moduleResolution: 'node'
+              compilerOptions: {
+                // Override specific options based on target
+                ...(target === 'plugin' ? {
+                  target: 'ES2017',
+                  lib: ['ES2017'],
+                  module: 'CommonJS',
+                  jsx: 'preserve',
+                  noEmit: false // Allow emit for webpack
+                } : {
+                  target: 'ES2020',
+                  lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+                  module: 'ESNext',
+                  jsx: 'react-jsx',
+                  noEmit: false // Allow emit for webpack
+                })
               }
             },
           },

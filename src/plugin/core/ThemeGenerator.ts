@@ -1,4 +1,4 @@
-// src/plugin/core/ThemeGenerator.ts - Updated with Shared Types
+// src/plugin/core/ThemeGenerator.ts - Fixed TypeScript Issues
 import { DeviceInfo, ColorToken, TypographyToken, SpacingToken, ThemeTokens } from '../../shared/types';
 
 export class ThemeGenerator {
@@ -181,7 +181,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
       // Fill colors
       if ('fills' in node && node.fills && Array.isArray(node.fills)) {
         for (const fill of node.fills) {
-          if (fill.type === 'SOLID') {
+          if (fill.type === 'SOLID' && 'color' in fill) {
             const color = this.rgbToHex(fill.color);
             this.colorFrequency.set(color, (this.colorFrequency.get(color) || 0) + 1);
           }
@@ -191,7 +191,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
       // Stroke colors
       if ('strokes' in node && node.strokes && Array.isArray(node.strokes)) {
         for (const stroke of node.strokes) {
-          if (stroke.type === 'SOLID') {
+          if (stroke.type === 'SOLID' && 'color' in stroke) {
             const color = this.rgbToHex(stroke.color);
             this.colorFrequency.set(color, (this.colorFrequency.get(color) || 0) + 1);
           }
@@ -207,9 +207,9 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
    */
   private static extractTypographyFromNode(node: TextNode) {
     try {
-      const fontSize = (node.fontSize as number) || 16;
-      const fontFamily = (node.fontName as FontName)?.family || 'Inter';
-      const fontWeight = (node.fontName as FontName)?.style || 'Regular';
+      const fontSize = (typeof node.fontSize === 'number' ? node.fontSize : undefined) || 16;
+      const fontFamily = (node.fontName && typeof node.fontName === 'object' && 'family' in node.fontName) ? node.fontName.family : 'Inter';
+      const fontWeight = (node.fontName && typeof node.fontName === 'object' && 'style' in node.fontName) ? node.fontName.style : 'Regular';
       
       const key = `${fontFamily}-${fontSize}-${fontWeight}`;
       const existing = this.fontFrequency.get(key);
@@ -338,7 +338,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
       .slice(0, 15); // Take top 15 spacing values
 
     for (let i = 0; i < sortedSpacing.length; i++) {
-      const [value, frequency] = sortedSpacing[i];
+      const [value] = sortedSpacing[i];
       tokens.push({
         name: this.generateSpacingName(value),
         value,
@@ -384,7 +384,7 @@ export const getResponsiveSpacing = (baseSpacing: number): number => {
   /**
    * Generate other required methods for typography, spacing, etc.
    */
-  private static generateTypographyName(font: any, index: number): string {
+  private static generateTypographyName(font: { family: string; size: number; weight: string; count: number }, index: number): string {
     if (font.size >= 24) return `heading${index + 1}`;
     if (font.size >= 16) return `body${index + 1}`;
     return `caption${index + 1}`;
@@ -524,12 +524,12 @@ const getBreakpointFontSize = (baseFontSize: number): number => {
 const normalize = getResponsiveFontSize;`;
   }
 
-  private static extractShadowTokens(): any[] {
+  private static extractShadowTokens(): unknown[] {
     // Placeholder for shadow extraction
     return [];
   }
 
-  private static extractBorderRadiusTokens(): any[] {
+  private static extractBorderRadiusTokens(): unknown[] {
     // Placeholder for border radius extraction
     return [];
   }

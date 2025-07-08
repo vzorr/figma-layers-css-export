@@ -8,6 +8,11 @@ console.log('🎨 [UI] Starting Figma to React Native Plugin UI...');
 
 // Ensure DOM is ready
 const initializeUI = () => {
+  if (typeof document === 'undefined') {
+    console.error('❌ [UI] Document not available');
+    return;
+  }
+
   const container = document.getElementById('root');
   if (!container) {
     console.error('❌ [UI] Root element not found');
@@ -34,8 +39,12 @@ const initializeUI = () => {
 };
 
 // Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeUI);
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUI);
+  } else {
+    initializeUI();
+  }
 } else {
-  initializeUI();
+  console.error('❌ [UI] No document object available');
 }

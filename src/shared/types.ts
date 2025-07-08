@@ -1,4 +1,20 @@
-// src/shared/types.ts - Complete Consolidated Types for Plugin
+// src/shared/types.ts - Updated with Proper Figma Types
+
+// ============================================================================
+// FIGMA API TYPES (Enhanced)
+// ============================================================================
+
+// Use Figma's built-in Vector type instead of defining our own
+
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
+interface RGBA extends RGB {
+  a: number;
+}
 
 // ============================================================================
 // DEVICE DETECTION TYPES
@@ -159,6 +175,58 @@ export interface ResponsiveAnalysis {
 // LAYER DATA TYPES
 // ============================================================================
 
+// Enhanced Figma fill type
+export interface FigmaFill {
+  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND' | 'IMAGE' | 'EMOJI' | 'VIDEO';
+  color?: RGB;
+  opacity?: number;
+  visible?: boolean;
+  blendMode?: string;
+  // Additional properties for other fill types
+  gradientHandlePositions?: Vector[];
+  gradientStops?: Array<{
+    color: RGBA;
+    position: number;
+  }>;
+  scaleMode?: 'FILL' | 'FIT' | 'CROP' | 'TILE';
+  imageHash?: string;
+  gifRef?: string;
+}
+
+// Enhanced Figma stroke type
+export interface FigmaStroke {
+  type: 'SOLID' | 'GRADIENT_LINEAR' | 'GRADIENT_RADIAL' | 'GRADIENT_ANGULAR' | 'GRADIENT_DIAMOND';
+  color?: RGB;
+  opacity?: number;
+  visible?: boolean;
+  blendMode?: string;
+}
+
+// Enhanced Figma effect types
+export interface FigmaEffect {
+  type: 'INNER_SHADOW' | 'DROP_SHADOW' | 'LAYER_BLUR' | 'BACKGROUND_BLUR';
+  color?: RGBA;
+  offset?: Vector;
+  radius: number;
+  spread?: number;
+  visible?: boolean;
+  blendMode?: string;
+}
+
+// Enhanced FontName type - Use Figma's built-in FontName
+// (No need to redefine - Figma provides this)
+
+// Enhanced LineHeight type - Match Figma's actual LineHeight structure
+export type FigmaLineHeight = 
+  | { readonly unit: "AUTO" }
+  | { readonly unit: "PIXELS"; readonly value: number }
+  | { readonly unit: "PERCENT"; readonly value: number };
+
+// Enhanced LetterSpacing type - Match Figma's actual LetterSpacing structure  
+export type FigmaLetterSpacing = 
+  | { readonly unit: "PIXELS"; readonly value: number }
+  | { readonly unit: "PERCENT"; readonly value: number };
+
 export interface NodeProperties {
   x?: number;
   y?: number;
@@ -175,23 +243,23 @@ export interface NodeProperties {
   primaryAxisAlignItems?: string;
   counterAxisAlignItems?: string;
   
-  // Visual properties
-  fills?: unknown[];
-  strokes?: unknown[];
+  // Visual properties (Enhanced)
+  fills?: FigmaFill[];
+  strokes?: FigmaStroke[];
   strokeWeight?: number;
   cornerRadius?: number;
-  effects?: unknown[];
+  effects?: FigmaEffect[];
   opacity?: number;
   rotation?: number;
   
-  // Text properties
+  // Text properties (Enhanced)
   fontSize?: number;
-  fontName?: unknown;
+  fontName?: FontName; // Use Figma's built-in FontName type
   textAlignHorizontal?: string;
   textAlignVertical?: string;
   characters?: string;
-  lineHeight?: unknown;
-  letterSpacing?: unknown;
+  lineHeight?: LineHeight; // Use Figma's built-in LineHeight type
+  letterSpacing?: LetterSpacing; // Use Figma's built-in LetterSpacing type
 }
 
 export interface LayerData {

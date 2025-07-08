@@ -1,4 +1,4 @@
-// src/ui/components/PluginUI.tsx - Enhanced Main UI Component
+// src/ui/components/PluginUI.tsx - Fixed Event Types and DOM Access
 import React, { useState, useEffect } from 'react';
 import { 
   DeviceInfo, 
@@ -48,13 +48,17 @@ export const PluginUI: React.FC = () => {
     console.log('🎨 [PluginUI] Component mounted');
     
     // Listen for messages from plugin
-    window.addEventListener('message', handlePluginMessage);
+    const handleMessage = (event: MessageEvent) => {
+      handlePluginMessage(event);
+    };
+    
+    window.addEventListener('message', handleMessage);
     
     // Send ready signal to plugin
     sendMessage({ type: 'ui-ready' });
 
     return () => {
-      window.removeEventListener('message', handlePluginMessage);
+      window.removeEventListener('message', handleMessage);
     };
   }, []);
 
@@ -106,7 +110,9 @@ export const PluginUI: React.FC = () => {
   };
 
   const sendMessage = (message: UIToPluginMessage) => {
-    parent.postMessage({ pluginMessage: message }, '*');
+    if (typeof window !== 'undefined' && window.parent) {
+      window.parent.postMessage({ pluginMessage: message }, '*');
+    }
   };
 
   const handleLayerSelect = (layer: LayerData) => {
@@ -120,7 +126,9 @@ export const PluginUI: React.FC = () => {
 
   const handleGenerateReactNative = () => {
     if (!state.selectedLayer) {
-      alert('Please select a layer first');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Please select a layer first');
+      }
       return;
     }
 
@@ -138,9 +146,10 @@ export const PluginUI: React.FC = () => {
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(generatedCode);
-      // You could add a toast notification here
-      console.log('✅ Code copied to clipboard');
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(generatedCode);
+        console.log('✅ Code copied to clipboard');
+      }
     } catch (error) {
       console.error('Failed to copy:', error);
     }
@@ -388,7 +397,7 @@ export const PluginUI: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={options.useTypeScript}
-                        onChange={(e) => setOptions(prev => ({ ...prev, useTypeScript: e.target.checked }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions(prev => ({ ...prev, useTypeScript: e.target.checked }))}
                       />
                       <span>TypeScript</span>
                     </label>
@@ -396,7 +405,7 @@ export const PluginUI: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={options.useResponsive}
-                        onChange={(e) => setOptions(prev => ({ ...prev, useResponsive: e.target.checked }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions(prev => ({ ...prev, useResponsive: e.target.checked }))}
                       />
                       <span>Responsive</span>
                     </label>
@@ -404,7 +413,7 @@ export const PluginUI: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={options.useThemeTokens}
-                        onChange={(e) => setOptions(prev => ({ ...prev, useThemeTokens: e.target.checked }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions(prev => ({ ...prev, useThemeTokens: e.target.checked }))}
                       />
                       <span>Theme Tokens</span>
                     </label>
@@ -412,7 +421,7 @@ export const PluginUI: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={options.includeNavigation}
-                        onChange={(e) => setOptions(prev => ({ ...prev, includeNavigation: e.target.checked }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions(prev => ({ ...prev, includeNavigation: e.target.checked }))}
                       />
                       <span>Navigation</span>
                     </label>
@@ -423,7 +432,7 @@ export const PluginUI: React.FC = () => {
                   <h4>Component Type</h4>
                   <select
                     value={options.componentType}
-                    onChange={(e) => setOptions(prev => ({ 
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOptions(prev => ({ 
                       ...prev, 
                       componentType: e.target.value as GenerationOptions['componentType']
                     }))}
@@ -439,7 +448,7 @@ export const PluginUI: React.FC = () => {
                   <h4>Output Format</h4>
                   <select
                     value={options.outputFormat}
-                    onChange={(e) => setOptions(prev => ({ 
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOptions(prev => ({ 
                       ...prev, 
                       outputFormat: e.target.value as GenerationOptions['outputFormat']
                     }))}

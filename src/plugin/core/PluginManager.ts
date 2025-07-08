@@ -1,4 +1,4 @@
-// src/plugin/core/PluginManager.ts - Fixed TypeScript Null Issues
+// src/plugin/core/PluginManager.ts - Fixed Font Name Types
 import { DeviceDetector } from './DeviceDetector';
 import { ThemeGenerator } from './ThemeGenerator';
 import { ReactNativeGenerator } from '../generators/ReactNativeGenerator';
@@ -8,7 +8,9 @@ import {
   ThemeTokens,
   LayerData,
   GenerationOptions,
-  NodeProperties
+  NodeProperties,
+  UIToPluginMessage,
+  PluginToUIMessage
 } from '../../shared/types';
 
 interface PluginState {
@@ -59,7 +61,8 @@ export class PluginManager {
       console.log(`📨 [PluginManager] Received message: ${msg.type}`);
       
       try {
-        await this.handleMessage(msg);
+        // Handle the message - it should be a UIToPluginMessage
+        await this.handleMessage(msg as UIToPluginMessage);
       } catch (error) {
         console.error(`❌ [PluginManager] Error handling message:`, error);
         this.sendError(`Error: ${(error as Error).message}`);
@@ -70,7 +73,7 @@ export class PluginManager {
   /**
    * Handle incoming messages from UI
    */
-  private async handleMessage(msg: any) {
+  private async handleMessage(msg: UIToPluginMessage) {
     switch (msg.type) {
       case 'ui-ready':
         await this.handleUIReady();
@@ -101,7 +104,7 @@ export class PluginManager {
         break;
 
       default:
-        console.warn(`⚠️ [PluginManager] Unknown message type: ${msg.type}`);
+        console.warn(`⚠️ [PluginManager] Unknown message type: ${msg}`);
     }
   }
 
@@ -357,7 +360,7 @@ export class PluginManager {
   }
 
   /**
-   * Extract comprehensive node properties with null safety
+   * Extract comprehensive node properties with null safety and proper font handling
    */
   private extractNodeProperties(node: SceneNode): NodeProperties {
     const props: NodeProperties = {
@@ -409,7 +412,7 @@ export class PluginManager {
         props.cornerRadius = node.cornerRadius;
       } else if (typeof node.cornerRadius === 'object' && node.cornerRadius !== null) {
         // For mixed corner radius, use the first value or calculate average
-        const cornerRadiusObj = node.cornerRadius as any;
+        const cornerRadiusObj = node.cornerRadius as Record<string, number>;
         if (typeof cornerRadiusObj === 'object') {
           // Try to get a representative value
           props.cornerRadius = cornerRadiusObj.topLeftRadius || cornerRadiusObj[0] || 0;
@@ -432,7 +435,7 @@ export class PluginManager {
       props.rotation = node.rotation;
     }
 
-    // Extract text properties for text nodes with null safety
+    // Extract text properties for text nodes with proper font handling - FIXED
     if (node.type === 'TEXT') {
       const textNode = node as TextNode;
       
@@ -441,12 +444,25 @@ export class PluginManager {
         props.fontSize = textNode.fontSize;
       }
       
-      props.fontName = textNode.fontName;
+      // Safe fontName extraction - handle figma.mixed and undefined cases
+      if (textNode.fontName && textNode.fontName !== figma.mixed) {
+        // Only assign if it's a valid FontName object, not figma.mixed
+        props.fontName = textNode.fontName as FontName;
+      }
+      
       props.characters = textNode.characters;
       props.textAlignHorizontal = textNode.textAlignHorizontal;
       props.textAlignVertical = textNode.textAlignVertical;
-      props.lineHeight = textNode.lineHeight;
-      props.letterSpacing = textNode.letterSpacing;
+      
+      // Safe lineHeight extraction (can be figma.mixed)
+      if (textNode.lineHeight && textNode.lineHeight !== figma.mixed) {
+        props.lineHeight = textNode.lineHeight;
+      }
+      
+      // Safe letterSpacing extraction (can be figma.mixed)
+      if (textNode.letterSpacing && textNode.letterSpacing !== figma.mixed) {
+        props.letterSpacing = textNode.letterSpacing;
+      }
     }
 
     return props;
@@ -486,7 +502,7 @@ export class PluginManager {
   /**
    * Send message to UI
    */
-  private sendMessage(message: any) {
+  private sendMessage(message: PluginToUIMessage) {
     figma.ui.postMessage(message);
   }
 
