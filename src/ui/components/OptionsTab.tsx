@@ -29,7 +29,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
             <input
               type="checkbox"
               checked={options.useTypeScript}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateOption('useTypeScript', e.target.checked)}
+              onChange={(e) => updateOption('useTypeScript', e.target.checked)}
             />
             <span>TypeScript</span>
           </label>
@@ -37,7 +37,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
             <input
               type="checkbox"
               checked={options.useResponsive}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateOption('useResponsive', e.target.checked)}
+              onChange={(e) => updateOption('useResponsive', e.target.checked)}
             />
             <span>Responsive</span>
           </label>
@@ -45,7 +45,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
             <input
               type="checkbox"
               checked={options.useThemeTokens}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateOption('useThemeTokens', e.target.checked)}
+              onChange={(e) => updateOption('useThemeTokens', e.target.checked)}
             />
             <span>Theme Tokens</span>
           </label>
@@ -53,7 +53,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
             <input
               type="checkbox"
               checked={options.includeNavigation}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateOption('includeNavigation', e.target.checked)}
+              onChange={(e) => updateOption('includeNavigation', e.target.checked)}
             />
             <span>Navigation</span>
           </label>
@@ -64,7 +64,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
         <h4>Component Type</h4>
         <select
           value={options.componentType}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateOption('componentType', e.target.value as GenerationOptions['componentType'])}
+          onChange={(e) => updateOption('componentType', e.target.value as GenerationOptions['componentType'])}
           className="select-input"
         >
           <option value="screen">Full Screen Component</option>
@@ -77,7 +77,7 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
         <h4>Output Format</h4>
         <select
           value={options.outputFormat}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateOption('outputFormat', e.target.value as GenerationOptions['outputFormat'])}
+          onChange={(e) => updateOption('outputFormat', e.target.value as GenerationOptions['outputFormat'])}
           className="select-input"
         >
           <option value="single-file">Single File</option>

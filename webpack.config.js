@@ -20,35 +20,6 @@ module.exports = (env) => {
         '@shared': path.resolve(__dirname, 'src/shared'),
       },
     },
-    module: {
-      rules: [
-        {
-          test: /\.tsx?$/,
-          use: {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: false,
-              compilerOptions: {
-                ...(target === 'plugin' ? {
-                  target: 'ES2017',
-                  lib: ['ES2017'],
-                  module: 'CommonJS',
-                  jsx: 'preserve',
-                  noEmit: false
-                } : {
-                  target: 'ES2020',
-                  lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-                  module: 'ESNext',
-                  jsx: 'react-jsx',
-                  noEmit: false
-                })
-              }
-            },
-          },
-          exclude: /node_modules/,
-        },
-      ],
-    },
     stats: {
       errorDetails: true,
       children: true,
@@ -75,6 +46,30 @@ module.exports = (env) => {
       externals: {
         figma: 'figma',
       },
+      module: {
+        rules: [
+          {
+            test: /\.tsx?$/,
+            use: {
+              loader: 'ts-loader',
+              options: {
+                transpileOnly: false,
+                compilerOptions: {
+                  target: 'ES2017',
+                  lib: ['ES2017'],
+                  module: 'CommonJS',
+                  jsx: 'preserve',
+                  noEmit: false,
+                  // Plugin-specific config - no DOM
+                  skipLibCheck: true,
+                  declaration: false
+                }
+              },
+            },
+            exclude: /node_modules/,
+          },
+        ],
+      },
       optimization: {
         minimize: isProduction,
         moduleIds: 'named',
@@ -88,7 +83,7 @@ module.exports = (env) => {
     };
   }
 
-  // UI Configuration - FIXED TEMPLATE PATH
+  // UI Configuration - FIXED: Proper TypeScript config for browser environment
   return {
     ...commonConfig,
     name: 'ui',
@@ -102,9 +97,30 @@ module.exports = (env) => {
     },
     target: 'web',
     module: {
-      ...commonConfig.module,
       rules: [
-        ...commonConfig.module.rules,
+        {
+          test: /\.tsx?$/,
+          use: {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: false,
+              compilerOptions: {
+                target: 'ES2020',
+                lib: ['ES2020', 'DOM', 'DOM.Iterable'], // FIXED: Include DOM libs
+                module: 'ESNext',
+                jsx: 'react-jsx',
+                noEmit: false,
+                // UI-specific config - include DOM
+                skipLibCheck: true,
+                declaration: false,
+                moduleResolution: 'node',
+                allowSyntheticDefaultImports: true,
+                esModuleInterop: true
+              }
+            },
+          },
+          exclude: /node_modules/,
+        },
         {
           test: /\.css$/,
           use: [
@@ -116,7 +132,6 @@ module.exports = (env) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        // FIXED: Use the correct template path
         template: path.resolve(__dirname, 'public/ui.html'),
         filename: 'ui.html',
         chunks: ['ui'],
@@ -164,7 +179,6 @@ module.exports = (env) => {
       maxEntrypointSize: 500000,
       hints: isProduction ? 'warning' : false
     },
-    // Add development server configuration
     devServer: {
       static: {
         directory: path.join(__dirname, 'dist'),
